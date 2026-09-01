@@ -1,0 +1,22 @@
+---
+import EmptyState from '@/components/ui/EmptyState.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  items?: string[];
+}
+
+const { title, description, items = [] } = Astro.props;
+---
+
+<div class="space-y-5">
+  <slot />
+  <EmptyState title={title} description={description} items={items} />
+  <a
+    href="/"
+    class="inline-flex text-sm font-medium text-app-muted-foreground underline decoration-app-border underline-offset-4 transition-colors hover:text-app-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-foreground"
+  >
+    返回 Dashboard
+  </a>
+</div>

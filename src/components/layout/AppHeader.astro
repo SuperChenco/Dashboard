@@ -1,0 +1,55 @@
+---
+import Icon from '@/components/ui/Icon';
+import QuickIdeaInput from '@/components/ideas/QuickIdeaInput';
+
+interface Props {
+  title: string;
+  subtitle?: string;
+  eyebrow?: string;
+}
+
+const { title, subtitle, eyebrow } = Astro.props;
+---
+
+<header class="border-b border-app-border bg-app-background">
+  <div
+    class="mx-auto flex w-full max-w-[90rem] items-end justify-between gap-8 px-5 py-6 sm:px-8 lg:px-10 lg:py-7"
+  >
+    <div class="min-w-0">
+      {
+        eyebrow && (
+          <p class="mb-1 text-[10px] font-semibold tracking-[0.14em] text-app-subtle uppercase">
+            {eyebrow}
+          </p>
+        )
+      }
+      <h1
+        class="truncate text-page-title font-semibold tracking-tight text-app-foreground"
+      >
+        {title}
+      </h1>
+      {
+        subtitle && (
+          <p class="mt-1 text-sm text-app-muted-foreground">{subtitle}</p>
+        )
+      }
+    </div>
+
+    <div class="hidden shrink-0 items-center gap-2 lg:flex">
+      <button
+        type="button"
+        disabled
+        title="Phase 1 搜索占位"
+        class="inline-flex h-9 min-w-48 cursor-not-allowed items-center gap-2 rounded-control border border-app-border bg-white px-3 text-sm text-app-subtle"
+      >
+        <Icon name="search" className="size-4" />
+        <span>搜索</span>
+        <kbd
+          class="ml-auto rounded border border-app-border bg-app-muted px-1.5 py-0.5 text-[10px]"
+          >/</kbd
+        >
+      </button>
+      <QuickIdeaInput client:load variant="primary" />
+    </div>
+  </div>
+</header>

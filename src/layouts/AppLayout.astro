@@ -1,0 +1,53 @@
+---
+import AppHeader from '@/components/layout/AppHeader.astro';
+import MobileShell from '@/components/layout/MobileShell';
+import Sidebar from '@/components/layout/Sidebar.astro';
+import '@/styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  subtitle?: string;
+  eyebrow?: string;
+}
+
+const {
+  title,
+  description = `${title} · P_CEO_OS`,
+  subtitle,
+  eyebrow,
+} = Astro.props;
+const activePath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <title>{title} · P_CEO_OS</title>
+  </head>
+  <body class="min-h-screen bg-app-background text-app-foreground antialiased">
+    <a
+      href="#main-content"
+      class="fixed top-3 left-3 z-[100] -translate-y-20 rounded-control bg-app-foreground px-3 py-2 text-sm font-medium text-white focus:translate-y-0"
+    >
+      跳到主要内容
+    </a>
+    <Sidebar activePath={activePath} />
+    <MobileShell client:load activePath={activePath} />
+    <div class="min-h-screen lg:pl-sidebar">
+      <AppHeader title={title} subtitle={subtitle} eyebrow={eyebrow} />
+      <main
+        id="main-content"
+        class="mx-auto w-full max-w-[90rem] px-5 pt-6 pb-24 sm:px-8 sm:pt-8 lg:px-10 lg:pb-10"
+      >
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

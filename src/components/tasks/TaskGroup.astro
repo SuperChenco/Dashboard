@@ -1,0 +1,67 @@
+---
+import Badge from '@/components/ui/Badge.astro';
+import Card from '@/components/ui/Card.astro';
+import type { MockTask, TaskStatus } from '@/types/dashboard';
+
+interface Props {
+  title: string;
+  description: string;
+  tasks: MockTask[];
+  status: TaskStatus;
+}
+
+const { title, description, tasks, status } = Astro.props;
+const badgeTone =
+  status === 'done'
+    ? 'success'
+    : status === 'in-progress'
+      ? 'warning'
+      : 'neutral';
+---
+
+<Card class="p-5 sm:p-6">
+  <header class="flex items-start justify-between gap-4">
+    <div>
+      <h2 class="text-sm font-semibold text-app-foreground">{title}</h2>
+      <p class="mt-1 text-xs leading-5 text-app-subtle">{description}</p>
+    </div>
+    <Badge label={`${tasks.length}`} status={badgeTone} />
+  </header>
+  {
+    tasks.length > 0 ? (
+      <ul class="mt-4 divide-y divide-app-border">
+        {tasks.map((task) => (
+          <li class="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+            <span
+              class:list={[
+                'mt-1.5 size-2 shrink-0 rounded-full',
+                status === 'in-progress' && 'bg-warning',
+                status === 'done' && 'bg-success',
+                (status === 'todo' || status === 'later') &&
+                  'border border-app-subtle bg-white',
+              ]}
+              aria-hidden="true"
+            />
+            <div class="min-w-0">
+              <p
+                class:list={[
+                  'text-sm font-medium leading-5',
+                  status === 'done'
+                    ? 'text-app-subtle line-through'
+                    : 'text-app-foreground',
+                ]}
+              >
+                {task.title}
+              </p>
+              <p class="mt-1 text-xs text-app-subtle">{task.context}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="mt-4 rounded-control bg-app-muted px-3 py-3 text-sm text-app-subtle">
+        暂无 Mock 项目
+      </p>
+    )
+  }
+</Card>

@@ -1,0 +1,38 @@
+---
+interface Props {
+  value: number;
+  label: string;
+  tone?: 'default' | 'strategic';
+}
+
+const { value, label, tone = 'default' } = Astro.props;
+const safeValue = Math.min(100, Math.max(0, value));
+---
+
+<div>
+  <div
+    class="mb-2 flex items-center justify-between gap-4 text-xs text-app-muted-foreground"
+  >
+    <span>{label}</span>
+    <span>{safeValue}%</span>
+  </div>
+  <div
+    class="h-1.5 overflow-hidden rounded-full bg-app-muted"
+    role="progressbar"
+    aria-label={label}
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow={safeValue}
+  >
+    <div
+      class:list={[
+        'h-full rounded-full',
+        tone === 'strategic'
+          ? 'bg-app-foreground'
+          : 'bg-app-muted-foreground/55',
+      ]}
+      style={`width: ${safeValue}%`}
+    >
+    </div>
+  </div>
+</div>

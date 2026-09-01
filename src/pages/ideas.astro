@@ -1,0 +1,27 @@
+---
+import QuickIdeaInput from '@/components/ideas/QuickIdeaInput';
+import ModulePlaceholder from '@/components/modules/ModulePlaceholder.astro';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="Ideas"
+  subtitle="先捕获，再判断是否值得进入战略系统"
+  eyebrow="Inbox"
+>
+  <ModulePlaceholder
+    title="Idea Inbox 目前为空"
+    description="Phase 1 不会持久化输入；快速记录只用于验证入口、Modal 与反馈流程。"
+    items={['未来支持分类与评估', '6 个月未查看提醒不属于 V1']}
+  >
+    <div
+      class="flex items-center justify-between gap-4 rounded-panel border border-app-border bg-app-surface p-5"
+    >
+      <div>
+        <p class="text-sm font-semibold text-app-foreground">快速捕获</p>
+        <p class="mt-1 text-xs text-app-subtle">Phase 1 Mock · 不写入数据库</p>
+      </div>
+      <QuickIdeaInput client:load variant="inline" />
+    </div>
+  </ModulePlaceholder>
+</AppLayout>
