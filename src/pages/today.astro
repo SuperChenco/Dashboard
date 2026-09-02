@@ -1,40 +1,11 @@
 ---
-import TaskGroup from '@/components/tasks/TaskGroup.astro';
-import { mockTasks } from '@/data/mock/tasks';
+import TodayWorkspace from '@/components/today/TodayWorkspace';
 import AppLayout from '@/layouts/AppLayout.astro';
-
-const groups = [
-  { status: 'todo' as const, title: '今日任务', description: '尚未开始' },
-  {
-    status: 'in-progress' as const,
-    title: 'In Progress',
-    description: '当前正在推进',
-  },
-  { status: 'done' as const, title: 'Completed', description: '今天已完成' },
-  {
-    status: 'later' as const,
-    title: 'Tomorrow / Later',
-    description: '稍后处理，不占用当前注意力',
-  },
-];
 ---
 
-<AppLayout
-  title="Today"
-  subtitle="只保留今天值得 CEO 注意的事项"
-  eyebrow="Focus"
->
-  <p class="mb-5 text-xs text-app-subtle">Phase 1 Mock Data · 不会写入数据库</p>
-  <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
-    {
-      groups.map((group) => (
-        <TaskGroup
-          title={group.title}
-          description={group.description}
-          status={group.status}
-          tasks={mockTasks.filter((task) => task.status === group.status)}
-        />
-      ))
-    }
-  </div>
+<AppLayout title="Today" subtitle="CEO Daily Command Surface" eyebrow="Focus">
+  <p class="mb-5 text-xs text-app-subtle">
+    One Thing → up to 3 Key Tasks → Other Tasks · Nothing rolls automatically
+  </p>
+  <TodayWorkspace client:only="react" />
 </AppLayout>

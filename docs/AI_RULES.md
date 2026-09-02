@@ -35,7 +35,9 @@ Propose → CEO Confirm → Execute → Audit
 
 页面和 React 组件不得直接调用 OpenAI。所有调用必须经过可替换的 AI Service/Provider boundary，并在服务端执行。
 
-Phase 0 只定义 TypeScript interface，不安装 OpenAI SDK、不创建 provider、不发送请求。
+Phase 0 定义 TypeScript interface。Phase 2 增加纯确定性 Mock Advisor，用于 Task 分类、One Thing、Blocked Next Action、Idea 分析和 Strategic Drift Preview；不安装 OpenAI SDK、不创建真实 provider、不发送请求。
+
+任何 Mock Advisor suggestion 默认是 inert data。只有带有明确 `CEO Confirm` 的用户动作才能调用相应 Workflow Service mutation，并追加 Audit Event。
 
 ## 记录要求
 

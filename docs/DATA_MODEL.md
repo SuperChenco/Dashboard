@@ -1,6 +1,6 @@
 # P_CEO_OS V1 数据模型基线
 
-本文件描述已确认的数据方向，不是可执行 Migration。Phase 0 不创建数据库结构。
+本文件描述已确认的数据方向，不是可执行 Migration。Phase 2 不创建数据库结构。
 
 ## 通用原则
 
@@ -66,7 +66,17 @@ Idea
 
 ## Goals 与 Sprint
 
-`goals` 使用 `parent_goal_id` 和 level 表达 Life Direction、3-Year、Annual、Quarter 等层级。Sprint 有独立周期、状态与目标关联，因此使用独立 `sprints` 表。
+`goals` 使用 `parent_goal_id` 表达层级；超过 3 层只提醒、不拒绝。Goal 必须有 `deadline` 或 `next_review_at`，并保存 why、success metrics、progress mode、official progress、suggested progress 与 last meaningful progress。
+
+Sprint 有独立周期、kind、status、Primary Outcome 与 review history，因此使用独立 `sprints` 表。Sprint 与 Goal 应支持一个 Primary Goal 和多个 Secondary Goals；Carry Forward 通过 `carried_from_sprint_id` 保留来源。
+
+## Tasks / Today / Ideas
+
+- Task relationships are optional. Task records type, status, Waiting, Delegation, Blocked, estimate, hard deadline and target date separately.
+- Actual time reserves optional inferred/manual/focus fields without implementing a full timer in Phase 2.
+- Today Plan has at most one One Thing and three Key Tasks. Unfinished assignments are explicit review items and never auto-roll.
+- Idea requires only original text and source. Analysis is separate, and conversion stores bidirectional source references.
+- Phase 2 uses camelCase domain models in browser LocalStorage; Phase 4 maps them to PostgreSQL snake_case through a repository adapter.
 
 ## Opportunity 判断
 

@@ -3,7 +3,7 @@
 ## 状态
 
 - 基线：CEO 已确认
-- 当前阶段：Phase 1
+- 当前阶段：Phase 2（已实现，等待 CEO 验收）
 - 部署目标：Vercel
 
 ## 总体架构
@@ -36,6 +36,15 @@ Browser
 - Tailwind CSS-first `@theme` 定义最小颜色、间距、圆角、阴影和字号 token。
 - 所有 Phase 1 保存反馈明确标记为 Mock，不暗示数据库持久化。
 
+### Phase 2 Core Workflow
+
+- `src/domain` 保存纯 TypeScript 实体和业务规则，不依赖 React、Astro 或 Supabase。
+- `WorkflowService` 编排 mutation、确认边界和本地 Audit Event。
+- 页面依赖 `WorkflowRepository` contract；当前实现是浏览器 LocalStorage adapter。
+- Goals、Sprints、Tasks、Today 和 Ideas 采用页面级 React Islands；全局 Shell 仍由 Astro 管理。
+- Dashboard 把 Current Primary Sprint、Today's One Thing 与 Attention 提升为第一层信息。
+- Mock Advisor 使用确定性规则，明确显示 `Mock AI`，不构建真实 Provider。
+
 ## 服务边界
 
 页面不直接包含 Supabase 查询或 OpenAI 调用。业务能力通过 `src/services` 暴露，基础设施连接放在 `src/lib` 或后续 repository implementation 中。
@@ -47,18 +56,18 @@ Page / Component
       → Mock or Supabase implementation
 ```
 
-Phase 2 和 Phase 3 使用 mock repository 时，页面应依赖相同 contract，Phase 4 才替换为真实 Supabase implementation。
+Phase 2 和 Phase 3 使用 mock repository 时，页面依赖相同 contract，Phase 4 才替换为真实 Supabase implementation。Phase 2 LocalStorage 不是数据库，也不承担多用户、同步、加密或生产可靠性。
 
 ## Supabase
 
-Phase 0–1 只建立：
+Phase 0–2 只建立：
 
 - 环境变量 schema
 - Browser client factory
 - Request-scoped server client factory
 - 未配置时的明确失败行为
 
-Phase 0–1 不创建 Supabase 项目、表、Migration、Auth 页面、RLS 或业务数据。
+Phase 0–2 不创建 Supabase 项目、表、Migration、Auth 页面、RLS 或业务数据。
 
 ## FindingMat 边界
 

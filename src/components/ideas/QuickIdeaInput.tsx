@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 
 import Icon from '@/components/ui/Icon';
 import Modal from '@/components/ui/Modal';
+import { LocalWorkflowRepository } from '@/repositories/local/workflow-local.repository';
+import { WorkflowService } from '@/services/workflow/workflow.service';
 
 interface QuickIdeaInputProps {
   variant?: 'primary' | 'compact' | 'inline';
@@ -21,13 +23,13 @@ export default function QuickIdeaInput({
 }: QuickIdeaInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [idea, setIdea] = useState('');
-  const [isMockSaved, setIsMockSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const close = () => {
     setIsOpen(false);
     setIdea('');
-    setIsMockSaved(false);
+    setIsSaved(false);
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   };
 
@@ -47,17 +49,17 @@ export default function QuickIdeaInput({
       <Modal
         open={isOpen}
         title="快速记录新想法"
-        description="先记录，暂不分类。Phase 1 不会写入数据库。"
+        description="先记录，暂不分类。保存到当前浏览器 Local Mock，不调用 AI。"
         onClose={close}
       >
-        {isMockSaved ? (
+        {isSaved ? (
           <div className="mt-6" aria-live="polite">
             <div className="rounded-panel border border-success/20 bg-success-soft px-4 py-4">
               <p className="text-sm font-semibold text-success-strong">
-                Mock 保存成功
+                Idea 已保存到 Local Mock
               </p>
               <p className="mt-1 text-sm leading-6 text-success-strong/80">
-                这只是 Phase 1 交互反馈，内容没有保存到数据库。
+                未写入数据库，也没有自动触发 AI 分析。可在 Ideas 页面继续处理。
               </p>
             </div>
             <div className="mt-5 flex justify-end">
@@ -75,7 +77,12 @@ export default function QuickIdeaInput({
             className="mt-6"
             onSubmit={(event) => {
               event.preventDefault();
-              if (idea.trim()) setIsMockSaved(true);
+              if (idea.trim()) {
+                const service = new WorkflowService(
+                  new LocalWorkflowRepository(),
+                );
+                if (service.createIdea(idea).value) setIsSaved(true);
+              }
             }}
           >
             <label htmlFor="quick-idea" className="sr-only">
@@ -93,7 +100,7 @@ export default function QuickIdeaInput({
             />
             <div className="mt-2 flex items-center justify-between gap-4">
               <span className="rounded-badge border border-app-border bg-app-muted px-2 py-0.5 text-[11px] font-medium text-app-muted-foreground">
-                Phase 1 Mock
+                Phase 2 Local Mock
               </span>
               <span className="text-xs text-app-muted-foreground">
                 {idea.length} / 1000
@@ -112,7 +119,7 @@ export default function QuickIdeaInput({
                 disabled={!idea.trim()}
                 className="h-9 rounded-control bg-app-foreground px-4 text-sm font-medium text-white transition-colors hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-foreground disabled:cursor-not-allowed disabled:opacity-35"
               >
-                Save Mock
+                Save Idea
               </button>
             </div>
           </form>

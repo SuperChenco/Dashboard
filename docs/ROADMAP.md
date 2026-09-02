@@ -10,13 +10,15 @@
 
 ## Phase 1：CEO OS Shell
 
-状态：已实现，等待 CEO 验收。
+状态：已完成并通过 CEO 验收。
 
 建立 App Layout、Sidebar、Header、Dashboard shell、响应式导航、快速想法 Mock 交互和 Empty State。AI Brief 只提供明确标记的静态 Mock Insight。
 
 ## Phase 2：Goals + Tasks + Ideas
 
-完成目标、Sprint、任务和想法的核心交互。Ideas 支持保存与用户主动触发的 mock AI 分析。六个月未查看提醒不属于 V1。
+状态：已实现，等待 CEO 验收。
+
+完成 Goal → Sprint → Task → Today → Review 核心工作流，以及 Idea 捕获、主动 Mock AI 分析和 CEO 确认转换。加入基础 Strategic Drift 与 Goal Stagnation 确定性规则；复杂时间分析仍留在 Phase 6。六个月未查看提醒不属于 V1。
 
 ## Phase 3：Companies + People + Projects + Opportunities
 

@@ -1,47 +1,15 @@
 ---
-import ModulePlaceholder from '@/components/modules/ModulePlaceholder.astro';
-import Progress from '@/components/ui/Progress.astro';
-import { primaryStrategicGoal } from '@/data/mock/goals';
+import GoalsWorkspace from '@/components/goals/GoalsWorkspace';
 import AppLayout from '@/layouts/AppLayout.astro';
-
-const progress = Math.round(
-  (primaryStrategicGoal.completedMilestones /
-    primaryStrategicGoal.totalMilestones) *
-    100,
-);
 ---
 
 <AppLayout
   title="Goals"
-  subtitle="长期目标、阶段里程碑与当前 Sprint"
+  subtitle="战略结果、成功指标与定期 Review"
   eyebrow="Direction"
 >
-  <ModulePlaceholder
-    title="Goals 工作区将在后续阶段启用"
-    description="Phase 1 仅展示战略目标的 UI Mock，不支持创建、编辑或保存。"
-  >
-    <section
-      class="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6"
-    >
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p class="text-xs font-medium text-app-subtle">
-            2026 Q4 · Strategic Goal
-          </p>
-          <h2 class="mt-2 text-lg font-semibold text-app-foreground">
-            {primaryStrategicGoal.title}
-          </h2>
-          <p class="mt-1 text-sm text-app-muted-foreground">
-            {primaryStrategicGoal.currentSprint}
-          </p>
-        </div>
-        <span class="text-sm font-semibold text-app-foreground">
-          {primaryStrategicGoal.completedMilestones} / {
-            primaryStrategicGoal.totalMilestones
-          }
-        </span>
-      </div>
-      <div class="mt-5"><Progress value={progress} label="目标进度" /></div>
-    </section>
-  </ModulePlaceholder>
+  <p class="mb-5 text-xs text-app-subtle">
+    Phase 2 Local Mock · Goal 可不属于 Company，但必须有 Deadline 或 Next Review
+  </p>
+  <GoalsWorkspace client:only="react" />
 </AppLayout>

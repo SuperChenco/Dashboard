@@ -24,6 +24,8 @@ export interface NavigationItem {
 export const primaryNavigation: NavigationItem[] = [
   { label: 'Today', href: '/today', icon: 'today' },
   { label: 'Goals', href: '/goals', icon: 'goals' },
+  { label: 'Sprints', href: '/sprints', icon: 'goals' },
+  { label: 'Tasks', href: '/tasks', icon: 'today' },
   { label: 'Ideas', href: '/ideas', icon: 'ideas' },
   { label: 'Companies', href: '/companies', icon: 'companies' },
   { label: 'People', href: '/people', icon: 'people' },

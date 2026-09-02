@@ -107,7 +107,7 @@ export default function MobileShell({ activePath }: MobileShellProps) {
             })}
           </nav>
           <div className="border-t border-app-border p-4 text-xs text-app-subtle">
-            Phase 1 · UI Mock
+            Phase 2 · Local Mock
           </div>
         </div>
       </dialog>

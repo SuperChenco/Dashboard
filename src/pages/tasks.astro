@@ -1,0 +1,15 @@
+---
+import TasksWorkspace from '@/components/tasks/TasksWorkspace';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="Tasks"
+  subtitle="低摩擦执行单元，而不是系统的中心"
+  eyebrow="Task Pool"
+>
+  <p class="mb-5 text-xs text-app-subtle">
+    Phase 2 Local Mock · 所有关系均可选，Mock AI mutation 需要 CEO Confirm
+  </p>
+  <TasksWorkspace client:only="react" />
+</AppLayout>

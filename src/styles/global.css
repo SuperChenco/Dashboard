@@ -78,3 +78,9 @@ dialog::backdrop {
     transition-duration: 0.01ms !important;
   }
 }
+
+@layer components {
+  .task-action {
+    @apply h-8 rounded-control border border-app-border bg-white px-2.5 text-xs font-medium text-app-muted-foreground transition-colors hover:bg-app-muted hover:text-app-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-app-foreground;
+  }
+}

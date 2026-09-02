@@ -6,17 +6,18 @@ P_CEO_OS 负责管理目标、Sprint、任务、想法、公司、联系人、�
 
 ## 当前阶段
 
-Phase 1：CEO OS Shell。
+Phase 2：Core Workflow（已实现，等待 CEO 验收）。
 
-当前包含可运行的 Astro Server 骨架、React Islands、Tailwind、Vercel Adapter，以及响应式 App Layout、Dashboard、模块入口、快速想法 Mock 交互、Supabase 客户端边界和 AI Service interface。
+当前包含 Goal → Sprint → Task → Today → Review 核心工作流、Idea Local Mock 捕获与主动 Mock AI 分析、Repository Contract、本地 Audit History，以及 Phase 1 响应式 Shell。
 
-所有界面数据均为 Phase 1 Mock。当前没有数据库表、Migration、真实 Auth、真实业务数据或 OpenAI 调用。
+Phase 2 数据只保存在当前浏览器 LocalStorage。当前没有数据库表、Migration、真实 Auth、生产业务数据或 OpenAI 调用。
 
-## Phase 1 页面
+## 核心页面
 
 - `/` CEO Dashboard
 - `/today` 今日任务
-- `/goals`、`/ideas`、`/companies`、`/people`
+- `/goals`、`/sprints`、`/tasks`、`/ideas`
+- `/companies`、`/people`
 - `/projects`、`/opportunities`、`/health`、`/learning`
 
 ## 技术栈
@@ -44,7 +45,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-Phase 1 不需要填写真实 Supabase 或 OpenAI 凭据即可完成类型检查、测试和构建。
+Phase 2 不需要填写真实 Supabase 或 OpenAI 凭据即可完成类型检查、测试和构建。
 
 ## 常用命令
 
@@ -64,5 +65,6 @@ pnpm build
 - [数据模型](docs/DATA_MODEL.md)
 - [AI 权限规则](docs/AI_RULES.md)
 - [开发路线图](docs/ROADMAP.md)
+- [Phase 2 Business Rules](docs/PHASE_2_BUSINESS_RULES.md)
 
 任何 Phase 开始前都应先阅读相关文档，完成后执行测试、构建和控制台检查，再进入下一阶段。
