@@ -1,0 +1,25 @@
+---
+import type { SemanticStatus } from '@/types/dashboard';
+
+interface Props {
+  status?: SemanticStatus;
+  label: string;
+}
+
+const { status = 'neutral', label } = Astro.props;
+const statusClass = {
+  neutral: 'border-app-border bg-app-muted text-app-muted-foreground',
+  success: 'border-success/20 bg-success-soft text-success-strong',
+  warning: 'border-warning/20 bg-warning-soft text-warning-strong',
+  danger: 'border-danger/20 bg-danger-soft text-danger-strong',
+}[status];
+---
+
+<span
+  class:list={[
+    'inline-flex items-center rounded-badge border px-2 py-0.5 text-[11px] font-medium leading-4',
+    statusClass,
+  ]}
+>
+  {label}
+</span>

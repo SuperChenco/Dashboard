@@ -1,0 +1,12 @@
+---
+import SprintsWorkspace from '@/components/sprints/SprintsWorkspace';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="Sprints"
+  subtitle="4–7 天聚焦执行窗口"
+  eyebrow="Execution Window"
+>
+  <SprintsWorkspace client:only="react" />
+</AppLayout>

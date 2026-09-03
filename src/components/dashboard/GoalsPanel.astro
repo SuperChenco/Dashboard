@@ -1,0 +1,50 @@
+---
+import Badge from '@/components/ui/Badge.astro';
+import Card from '@/components/ui/Card.astro';
+import Progress from '@/components/ui/Progress.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import { primaryStrategicGoal } from '@/data/mock/goals';
+
+if (!primaryStrategicGoal) {
+  throw new Error('Phase 1 requires a primary strategic goal mock.');
+}
+
+const progress = Math.round(
+  (primaryStrategicGoal.completedMilestones /
+    primaryStrategicGoal.totalMilestones) *
+    100,
+);
+---
+
+<Card class="p-5 sm:p-6" labelledby="goals-panel-title">
+  <SectionHeader id="goals-panel-title" title="Strategic Goals" href="/goals" />
+  <div class="mt-5">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="text-base font-semibold tracking-tight text-app-foreground">
+          {primaryStrategicGoal.title}
+        </p>
+        <p class="mt-1 text-xs text-app-muted-foreground">
+          {primaryStrategicGoal.period}
+        </p>
+      </div>
+      <Badge
+        status={primaryStrategicGoal.status}
+        label={`${primaryStrategicGoal.completedMilestones} / ${primaryStrategicGoal.totalMilestones}`}
+      />
+    </div>
+    <div class="mt-6">
+      <Progress value={progress} label="MVP 验证里程碑" tone="strategic" />
+    </div>
+    <div class="mt-6 border-t border-app-border pt-4">
+      <p
+        class="text-[10px] font-semibold tracking-[0.13em] text-app-subtle uppercase"
+      >
+        Current Sprint
+      </p>
+      <p class="mt-2 text-sm font-medium text-app-foreground">
+        {primaryStrategicGoal.currentSprint}
+      </p>
+    </div>
+  </div>
+</Card>

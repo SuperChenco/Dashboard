@@ -1,0 +1,18 @@
+---
+import BusinessPanel from '@/components/dashboard/BusinessPanel.astro';
+import CoreWorkflowDashboard from '@/components/dashboard/CoreWorkflowDashboard';
+import AppLayout from '@/layouts/AppLayout.astro';
+
+const today = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  weekday: 'long',
+}).format(new Date());
+---
+
+<AppLayout title="Today" subtitle={today} eyebrow="CEO Dashboard">
+  <CoreWorkflowDashboard client:only="react" />
+  <div class="mt-5"><BusinessPanel /></div>
+</AppLayout>

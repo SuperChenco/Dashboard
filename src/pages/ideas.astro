@@ -1,0 +1,8 @@
+---
+import IdeasWorkspace from '@/components/ideas/IdeasWorkspace';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout title="Ideas" subtitle="先捕捉，再判断" eyebrow="Inbox">
+  <IdeasWorkspace client:only="react" />
+</AppLayout>

@@ -1,0 +1,12 @@
+---
+import TasksWorkspace from '@/components/tasks/TasksWorkspace';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="Tasks"
+  subtitle="按现在需要的处理方式组织工作"
+  eyebrow="Execution"
+>
+  <TasksWorkspace client:only="react" />
+</AppLayout>

@@ -1,0 +1,8 @@
+---
+import TodayWorkspace from '@/components/today/TodayWorkspace';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout title="Today" subtitle="今天真正值得推进的事" eyebrow="Focus">
+  <TodayWorkspace client:only="react" />
+</AppLayout>

@@ -1,0 +1,25 @@
+---
+import Badge from '@/components/ui/Badge.astro';
+import Card from '@/components/ui/Card.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import { mockAIInsight } from '@/data/mock/dashboard';
+---
+
+<Card class="p-5 sm:p-6" labelledby="ai-brief-panel-title">
+  <SectionHeader
+    id="ai-brief-panel-title"
+    title="AI Brief"
+    description="未来的 CEO 参谋入口"
+  />
+  <div class="mt-5">
+    <Badge label={mockAIInsight.label} />
+    <blockquote
+      class="mt-4 border-l-2 border-app-foreground pl-4 text-base font-medium leading-7 text-app-foreground"
+    >
+      {mockAIInsight.summary}
+    </blockquote>
+    <p class="mt-4 text-sm leading-6 text-app-muted-foreground">
+      {mockAIInsight.rationale}
+    </p>
+  </div>
+</Card>

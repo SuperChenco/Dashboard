@@ -1,0 +1,12 @@
+---
+import GoalsWorkspace from '@/components/goals/GoalsWorkspace';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="Goals"
+  subtitle="战略结果、成功标准与 Review"
+  eyebrow="Direction"
+>
+  <GoalsWorkspace client:only="react" />
+</AppLayout>

@@ -1,0 +1,16 @@
+---
+import ModulePlaceholder from '@/components/modules/ModulePlaceholder.astro';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="People"
+  subtitle="关键关系与下一步行动的入口"
+  eyebrow="Relationships"
+>
+  <ModulePlaceholder
+    title="尚无 People 数据"
+    description="Phase 1 仅建立导航与 Empty State；不实现联系人或 CRM CRUD。"
+    items={['关键客户', '合作伙伴', '团队与顾问']}
+  />
+</AppLayout>

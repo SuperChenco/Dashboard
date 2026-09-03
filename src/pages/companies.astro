@@ -1,0 +1,19 @@
+---
+import ModulePlaceholder from '@/components/modules/ModulePlaceholder.astro';
+import { businessSummaries } from '@/data/mock/companies';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="Companies"
+  subtitle="三个业务实体的战略状态入口"
+  eyebrow="Portfolio"
+>
+  <ModulePlaceholder
+    title="Companies 详情将在后续阶段启用"
+    description="这里管理业务状态与战略重点，不承载 FindingMat 内部产品功能。"
+    items={businessSummaries.map(
+      (company) => `${company.name} · ${company.currentStatus}`,
+    )}
+  />
+</AppLayout>

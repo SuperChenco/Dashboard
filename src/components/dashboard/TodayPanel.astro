@@ -1,0 +1,56 @@
+---
+import Badge from '@/components/ui/Badge.astro';
+import Card from '@/components/ui/Card.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import { dashboardTasks, taskStatusLabels } from '@/data/mock/tasks';
+
+const badgeTone = {
+  todo: 'neutral',
+  'in-progress': 'warning',
+  done: 'success',
+  later: 'neutral',
+} as const;
+---
+
+<Card class="p-5 sm:p-6" labelledby="today-panel-title">
+  <SectionHeader
+    id="today-panel-title"
+    title="Today"
+    description="今天真正需要 CEO 注意的三件事"
+    href="/today"
+  />
+  <ul class="mt-5 divide-y divide-app-border">
+    {
+      dashboardTasks.map((task) => (
+        <li class="flex items-start gap-3 py-3.5 first:pt-0 last:pb-0">
+          <span
+            class:list={[
+              'mt-1.5 size-2 shrink-0 rounded-full',
+              task.status === 'in-progress' && 'bg-warning',
+              task.status === 'done' && 'bg-success',
+              task.status === 'todo' && 'border border-app-subtle bg-white',
+            ]}
+            aria-hidden="true"
+          />
+          <div class="min-w-0 flex-1">
+            <p
+              class:list={[
+                'text-sm font-medium leading-5',
+                task.status === 'done'
+                  ? 'text-app-subtle line-through'
+                  : 'text-app-foreground',
+              ]}
+            >
+              {task.title}
+            </p>
+            <p class="mt-1 text-xs text-app-subtle">{task.context}</p>
+          </div>
+          <Badge
+            status={badgeTone[task.status]}
+            label={taskStatusLabels[task.status]}
+          />
+        </li>
+      ))
+    }
+  </ul>
+</Card>
