@@ -3,13 +3,6 @@ import IdeasWorkspace from '@/components/ideas/IdeasWorkspace';
 import AppLayout from '@/layouts/AppLayout.astro';
 ---
 
-<AppLayout
-  title="Ideas"
-  subtitle="Capture First. Organize Later."
-  eyebrow="Inbox"
->
-  <p class="mb-5 text-xs text-app-subtle">
-    保存不会自动分析；Mock AI 建议不会自动转换
-  </p>
+<AppLayout title="Ideas" subtitle="先捕捉，再判断" eyebrow="Inbox">
   <IdeasWorkspace client:only="react" />
 </AppLayout>

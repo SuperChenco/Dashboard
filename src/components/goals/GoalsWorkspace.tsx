@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import WorkflowNotice from '@/components/workflow/WorkflowNotice';
 import { isGoalStagnant } from '@/domain/goals';
+import type { Goal } from '@/domain/workflow/types';
 import { useWorkflow } from '@/hooks/useWorkflow';
 
 export default function GoalsWorkspace() {
@@ -12,22 +13,17 @@ export default function GoalsWorkspace() {
     errors: string[];
     warnings: string[];
   }>({ errors: [], warnings: [] });
+  const goalRows = buildGoalRows(state.goals);
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-app-border bg-app-surface p-5">
-        <div>
-          <p className="text-sm font-semibold">Strategic Results</p>
-          <p className="mt-1 text-xs text-app-subtle">
-            Result + Time/Review + Success Metrics + Why
-          </p>
-        </div>
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={() => setOpen(true)}
           className="h-9 rounded-control bg-app-foreground px-4 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          Create Goal
+          + New Goal
         </button>
       </div>
       {feedback.errors.map((error) => (
@@ -40,24 +36,32 @@ export default function GoalsWorkspace() {
           {warning}
         </WorkflowNotice>
       ))}
-      <div className="grid gap-5 lg:grid-cols-2">
-        {state.goals.map((goal) => {
+      <div className="space-y-4">
+        {goalRows.map(({ goal, depth }) => {
           const gap =
             goal.suggestedProgress === undefined
               ? undefined
               : goal.progress - goal.suggestedProgress;
+          const hasMeaningfulGap = gap !== undefined && Math.abs(gap) >= 10;
+          const activeSprint = state.sprints.find(
+            (sprint) =>
+              sprint.status === 'active' &&
+              (sprint.primaryGoalId === goal.id ||
+                sprint.secondaryGoalIds.includes(goal.id)),
+          );
           return (
             <article
               key={goal.id}
               className="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6"
+              style={{ marginInlineStart: `${Math.min(depth - 1, 2) * 24}px` }}
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-medium text-app-subtle">
-                    {goal.deadline
-                      ? `Deadline ${goal.deadline}`
-                      : `Review ${goal.nextReviewAt}`}
-                  </p>
+                  {depth > 1 && (
+                    <p className="text-[10px] font-semibold tracking-[0.12em] text-app-subtle uppercase">
+                      Level {depth} · Supporting Goal
+                    </p>
+                  )}
                   <h2 className="mt-2 text-lg font-semibold leading-7">
                     {goal.title}
                   </h2>
@@ -66,28 +70,75 @@ export default function GoalsWorkspace() {
                   {goal.status}
                 </span>
               </div>
-              <p className="mt-4 text-sm leading-6 text-app-muted-foreground">
-                {goal.why}
-              </p>
-              <ul className="mt-4 space-y-1.5 text-sm">
-                {goal.successMetrics.map((metric) => (
-                  <li key={metric}>— {metric}</li>
-                ))}
-              </ul>
-              <div className="mt-5 flex items-center justify-between text-xs text-app-muted-foreground">
-                <span>CEO Progress {goal.progress}%</span>
-                {gap !== undefined && (
-                  <span>
-                    AI Evidence {goal.suggestedProgress}% · Gap {gap}%
-                  </span>
-                )}
+              <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_1fr]">
+                <div>
+                  <p className="goal-label">Why</p>
+                  <p className="mt-1.5 text-sm leading-6 text-app-muted-foreground">
+                    {goal.why}
+                  </p>
+                </div>
+                <div>
+                  <p className="goal-label">Success</p>
+                  <ul className="mt-1.5 space-y-1 text-sm">
+                    {goal.successMetrics.map((metric) => (
+                      <li key={metric}>— {metric}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-app-muted">
+              <div className="mt-5 grid gap-4 border-t border-app-border pt-4 sm:grid-cols-2">
+                <div>
+                  <p className="goal-label">Time</p>
+                  <p className="mt-1.5 text-sm font-medium">
+                    {goal.deadline
+                      ? `Deadline · ${goal.deadline}`
+                      : `Next Review · ${goal.nextReviewAt}`}
+                  </p>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="goal-label">Progress</p>
+                    <span className="text-xs font-medium">
+                      {goal.progress}%
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-app-subtle">
+                    Official CEO Progress
+                    {gap !== undefined && !hasMeaningfulGap
+                      ? ` · Evidence ${goal.suggestedProgress}%`
+                      : ''}
+                  </p>
+                </div>
+              </div>
+              <div
+                className="mt-3 h-1.5 overflow-hidden rounded-full bg-app-muted"
+                role="progressbar"
+                aria-label={`${goal.title} progress`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={goal.progress}
+              >
                 <div
                   className="h-full rounded-full bg-app-foreground"
                   style={{ width: `${goal.progress}%` }}
                 />
               </div>
+              {activeSprint && (
+                <a
+                  href="/sprints"
+                  className="mt-4 inline-flex text-xs font-medium text-app-muted-foreground underline decoration-app-border underline-offset-4"
+                >
+                  Current Sprint → {activeSprint.title}
+                </a>
+              )}
+              {hasMeaningfulGap && (
+                <div className="mt-4">
+                  <WorkflowNotice tone="warning">
+                    Progress Gap · CEO 进度 {goal.progress}%，证据进度{' '}
+                    {goal.suggestedProgress}%。建议在下次 Review 核对。
+                  </WorkflowNotice>
+                </div>
+              )}
               {isGoalStagnant(goal, new Date()) && (
                 <div className="mt-4">
                   <WorkflowNotice tone="warning">
@@ -118,6 +169,23 @@ export default function GoalsWorkspace() {
       </Modal>
     </div>
   );
+}
+
+function buildGoalRows(goals: Goal[]) {
+  const rows: { goal: Goal; depth: number }[] = [];
+  const visit = (parentGoalId: string | undefined, depth: number) => {
+    goals
+      .filter((goal) => goal.parentGoalId === parentGoalId)
+      .forEach((goal) => {
+        rows.push({ goal, depth });
+        if (depth < 3) visit(goal.id, depth + 1);
+      });
+  };
+  visit(undefined, 1);
+  goals
+    .filter((goal) => !rows.some((row) => row.goal.id === goal.id))
+    .forEach((goal) => rows.push({ goal, depth: 1 }));
+  return rows;
 }
 
 function GoalForm({

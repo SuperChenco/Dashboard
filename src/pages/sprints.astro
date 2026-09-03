@@ -5,11 +5,8 @@ import AppLayout from '@/layouts/AppLayout.astro';
 
 <AppLayout
   title="Sprints"
-  subtitle="把战略结果带入 4–7 天的聚焦执行窗口"
+  subtitle="4–7 天聚焦执行窗口"
   eyebrow="Execution Window"
 >
-  <p class="mb-5 text-xs text-app-subtle">
-    Phase 2 Local Mock · 数据仅保存在当前浏览器
-  </p>
   <SprintsWorkspace client:only="react" />
 </AppLayout>

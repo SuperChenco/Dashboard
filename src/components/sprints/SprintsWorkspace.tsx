@@ -3,11 +3,16 @@ import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import WorkflowNotice from '@/components/workflow/WorkflowNotice';
 import {
+  formatDateRange,
+  getSprintTiming,
+} from '@/components/workflow/presentation';
+import {
   getMaintenanceFocusRisk,
   isSprintExpired,
   type SprintReviewDecision,
 } from '@/domain/sprints';
 import { useWorkflow } from '@/hooks/useWorkflow';
+import type { Sprint } from '@/domain/workflow/types';
 
 export default function SprintsWorkspace() {
   const { state, service } = useWorkflow();
@@ -19,22 +24,28 @@ export default function SprintsWorkspace() {
   }>({ errors: [], warnings: [] });
   const focusRisk = getMaintenanceFocusRisk(state.sprints);
   const today = new Date().toISOString().slice(0, 10);
+  const primary = state.sprints.find(
+    (sprint) => sprint.kind === 'primary' && sprint.status === 'active',
+  );
+  const needsReview = state.sprints.filter(
+    (sprint) => sprint.status === 'review' || isSprintExpired(sprint, today),
+  );
+  const maintenance = state.sprints.filter(
+    (sprint) =>
+      sprint.kind === 'maintenance' &&
+      sprint.status !== 'review' &&
+      !isSprintExpired(sprint, today),
+  );
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-app-border bg-app-surface p-5">
-        <div>
-          <p className="text-sm font-semibold">Sprint Portfolio</p>
-          <p className="mt-1 text-xs text-app-subtle">
-            最多一个 Primary Sprint；Maintenance 推荐 0–2 个。
-          </p>
-        </div>
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
           className="h-9 rounded-control bg-app-foreground px-4 text-sm font-medium text-white"
         >
-          Create Sprint
+          + New Sprint
         </button>
       </div>
       {focusRisk && (
@@ -50,54 +61,66 @@ export default function SprintsWorkspace() {
           {item}
         </WorkflowNotice>
       ))}
-      <div className="grid gap-5 lg:grid-cols-2">
-        {state.sprints.map((sprint) => (
-          <article
-            key={sprint.id}
-            className={`rounded-panel border bg-app-surface p-5 sm:p-6 ${sprint.kind === 'primary' && sprint.status === 'active' ? 'border-app-foreground/35' : 'border-app-border'}`}
+      {primary ? (
+        <PrimarySprintCard
+          sprint={primary}
+          today={today}
+          goalTitle={
+            state.goals.find((goal) => goal.id === primary.primaryGoalId)?.title
+          }
+        />
+      ) : (
+        <WorkflowNotice tone="warning">
+          当前没有 Primary Sprint。请为最重要的战略结果建立执行窗口。
+        </WorkflowNotice>
+      )}
+
+      {maintenance.length > 0 && (
+        <section aria-labelledby="maintenance-heading">
+          <h2
+            id="maintenance-heading"
+            className="mb-3 text-[10px] font-semibold tracking-[0.14em] text-app-subtle uppercase"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.14em] text-app-subtle uppercase">
-                  {sprint.kind} Sprint
-                </p>
-                <h2 className="mt-2 text-lg font-semibold">{sprint.title}</h2>
-              </div>
-              <span className="rounded-badge border border-app-border bg-app-muted px-2 py-1 text-[11px]">
-                {sprint.status}
-              </span>
-            </div>
-            <p className="mt-3 text-xs text-app-subtle">
-              {sprint.startDate} → {sprint.endDate}
-            </p>
-            <div className="mt-5 border-l-2 border-app-foreground pl-4">
-              <p className="text-xs font-semibold text-app-subtle uppercase">
-                Primary Outcome
-              </p>
-              <p className="mt-1 text-sm font-medium leading-6">
-                {sprint.primaryOutcome}
-              </p>
-            </div>
-            <div className="mt-5 flex items-center justify-between text-xs text-app-muted-foreground">
-              <span>{sprint.progress}% progress</span>
-              <span>
-                {sprint.primaryGoalId
-                  ? 'Primary Goal linked'
-                  : 'No Primary Goal'}
-              </span>
-            </div>
-            {(sprint.status === 'review' || isSprintExpired(sprint, today)) && (
-              <button
-                type="button"
-                onClick={() => setReviewId(sprint.id)}
-                className="mt-5 h-9 rounded-control border border-warning/30 bg-warning-soft px-3 text-sm font-medium text-warning-strong"
-              >
-                Open Sprint Review
-              </button>
-            )}
-          </article>
-        ))}
-      </div>
+            Maintenance
+          </h2>
+          <div className="space-y-2">
+            {maintenance.map((sprint) => (
+              <SprintCompactRow
+                key={sprint.id}
+                sprint={sprint}
+                goalTitle={
+                  state.goals.find((goal) => goal.id === sprint.primaryGoalId)
+                    ?.title
+                }
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {needsReview.length > 0 && (
+        <section aria-labelledby="review-heading">
+          <h2
+            id="review-heading"
+            className="mb-3 text-[10px] font-semibold tracking-[0.14em] text-warning-strong uppercase"
+          >
+            Needs Review
+          </h2>
+          <div className="space-y-2">
+            {needsReview.map((sprint) => (
+              <SprintCompactRow
+                key={sprint.id}
+                sprint={sprint}
+                goalTitle={
+                  state.goals.find((goal) => goal.id === sprint.primaryGoalId)
+                    ?.title
+                }
+                onReview={() => setReviewId(sprint.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <Modal
         open={createOpen}
@@ -241,6 +264,111 @@ export default function SprintsWorkspace() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+function PrimarySprintCard({
+  sprint,
+  today,
+  goalTitle,
+}: {
+  sprint: Sprint;
+  today: string;
+  goalTitle?: string;
+}) {
+  const timing = getSprintTiming(sprint, today);
+  return (
+    <section className="rounded-panel border border-app-foreground/30 bg-app-surface p-5 sm:p-7">
+      <p className="text-[10px] font-semibold tracking-[0.14em] text-app-subtle uppercase">
+        Current Primary
+      </p>
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            {sprint.title}
+          </h2>
+          <p className="mt-2 text-sm text-app-muted-foreground">
+            {formatDateRange(sprint.startDate, sprint.endDate)} · Day{' '}
+            {timing.day} / {timing.totalDays}
+          </p>
+        </div>
+        <span className="text-sm font-semibold">{sprint.progress}%</span>
+      </div>
+      <div className="mt-6 border-l-2 border-app-foreground pl-4">
+        <p className="goal-label">Primary Outcome</p>
+        <p className="mt-2 text-base font-medium leading-7">
+          {sprint.primaryOutcome}
+        </p>
+      </div>
+      <div
+        className="mt-6 h-1.5 overflow-hidden rounded-full bg-app-muted"
+        role="progressbar"
+        aria-label={`${sprint.title} progress`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={sprint.progress}
+      >
+        <div
+          className="h-full rounded-full bg-app-foreground"
+          style={{ width: `${sprint.progress}%` }}
+        />
+      </div>
+      <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-app-muted-foreground">
+        <span>
+          {timing.remainingDays > 0
+            ? `${timing.remainingDays} days remaining`
+            : '最后一天'}
+        </span>
+        {sprint.goldenTime && <span>Golden Time · {sprint.goldenTime}</span>}
+        {goalTitle ? (
+          <a href="/goals" className="font-medium underline underline-offset-4">
+            Goal · {goalTitle} →
+          </a>
+        ) : (
+          <span>No Goal</span>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SprintCompactRow({
+  sprint,
+  goalTitle,
+  onReview,
+}: {
+  sprint: Sprint;
+  goalTitle?: string;
+  onReview?: () => void;
+}) {
+  return (
+    <article className="rounded-control border border-app-border bg-app-surface px-4 py-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold">{sprint.title}</h3>
+            <span className="text-xs text-app-subtle">
+              {formatDateRange(sprint.startDate, sprint.endDate)}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-app-muted-foreground">
+            {sprint.primaryOutcome}
+          </p>
+          <p className="mt-1 text-xs text-app-subtle">
+            {sprint.progress}% · {goalTitle ? `Goal · ${goalTitle}` : 'No Goal'}
+          </p>
+        </div>
+        {onReview && (
+          <button
+            type="button"
+            onClick={onReview}
+            className="h-8 rounded-control border border-warning/30 bg-warning-soft px-3 text-xs font-medium text-warning-strong"
+          >
+            Review
+          </button>
+        )}
+      </div>
+    </article>
   );
 }
 

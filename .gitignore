@@ -21,6 +21,7 @@ pnpm-debug.log*
 # deployment and test output
 .vercel/
 coverage/
+.playwright-cli/
 output/playwright/
 
 # macOS-specific files

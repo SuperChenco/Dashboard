@@ -3,9 +3,6 @@ import TodayWorkspace from '@/components/today/TodayWorkspace';
 import AppLayout from '@/layouts/AppLayout.astro';
 ---
 
-<AppLayout title="Today" subtitle="CEO Daily Command Surface" eyebrow="Focus">
-  <p class="mb-5 text-xs text-app-subtle">
-    One Thing → up to 3 Key Tasks → Other Tasks · Nothing rolls automatically
-  </p>
+<AppLayout title="Today" subtitle="今天真正值得推进的事" eyebrow="Focus">
   <TodayWorkspace client:only="react" />
 </AppLayout>

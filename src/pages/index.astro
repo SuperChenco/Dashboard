@@ -13,9 +13,6 @@ const today = new Intl.DateTimeFormat('zh-CN', {
 ---
 
 <AppLayout title="Today" subtitle={today} eyebrow="CEO Dashboard">
-  <p class="mb-5 text-xs text-app-subtle">
-    Phase 2 Local Mock · Core Workflow · No Supabase / No OpenAI
-  </p>
   <CoreWorkflowDashboard client:only="react" />
   <div class="mt-5"><BusinessPanel /></div>
 </AppLayout>

@@ -1,7 +1,13 @@
 import { useState } from 'react';
 
 import WorkflowNotice from '@/components/workflow/WorkflowNotice';
-import { recommendOneThing } from '@/domain/advisor';
+import {
+  formatDateRange,
+  getSprintTiming,
+} from '@/components/workflow/presentation';
+import { detectStrategicDrift, recommendOneThing } from '@/domain/advisor';
+import { isGoalStagnant } from '@/domain/goals';
+import { getMaintenanceFocusRisk } from '@/domain/sprints';
 import { waitingNeedsAttention } from '@/domain/tasks';
 import type { YesterdayDecision } from '@/domain/today';
 import { useWorkflow } from '@/hooks/useWorkflow';
@@ -9,14 +15,32 @@ import { useWorkflow } from '@/hooks/useWorkflow';
 export default function TodayWorkspace() {
   const { state, service } = useWorkflow();
   const [feedback, setFeedback] = useState<string>();
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
   const date = new Date().toISOString().slice(0, 10);
   const plan =
     state.todayPlans.find((item) => item.date === date) ?? state.todayPlans[0];
   const primarySprint = state.sprints.find(
     (item) => item.kind === 'primary' && item.status === 'active',
   );
-  const suggestion = recommendOneThing(state.tasks, primarySprint);
+  const primaryGoal = state.goals.find(
+    (goal) => goal.id === primarySprint?.primaryGoalId,
+  );
+  const baseSuggestion = recommendOneThing(state.tasks, primarySprint);
   const oneThing = state.tasks.find((task) => task.id === plan.oneThingTaskId);
+  const recommendationCandidates = state.tasks.filter(
+    (task) => !['done', 'cancelled', 'waiting'].includes(task.status),
+  );
+  const recommendedTask =
+    recommendationCandidates.find(
+      (task) => suggestionIndex === 0 && task.id === baseSuggestion?.targetId,
+    ) ??
+    recommendationCandidates[suggestionIndex % recommendationCandidates.length];
+  const recommendationReason =
+    recommendedTask?.id === baseSuggestion?.targetId
+      ? baseSuggestion.reason
+      : recommendedTask?.type === 'strategic'
+        ? '这项工作与长期目标直接相关，适合作为今天的战略推进点。'
+        : '这项工作当前可执行，并能解除后续工作的依赖。';
   const keyTasks = plan.keyTaskIds
     .map((id) => state.tasks.find((task) => task.id === id))
     .filter(Boolean);
@@ -35,10 +59,24 @@ export default function TodayWorkspace() {
   const unfinished = plan.unfinishedTaskIds
     .map((id) => state.tasks.find((task) => task.id === id))
     .filter(Boolean);
+  const drift = detectStrategicDrift(
+    state.goals,
+    state.sprints,
+    state.tasks,
+    new Date(),
+  );
+  const focusRisk = getMaintenanceFocusRisk(state.sprints);
+  const stagnant = state.goals.some((goal) => isGoalStagnant(goal, new Date()));
+  const strategicWarning =
+    drift?.reason ??
+    focusRisk ??
+    (stagnant
+      ? '有 Goal 已超过 4 周没有有效进展，建议安排 Review。'
+      : undefined);
 
   const addKey = (taskId: string) => {
     const result = service.addTodayKeyTask(taskId);
-    setFeedback(result?.errors?.[0] ?? 'Key Task added.');
+    setFeedback(result?.errors?.[0] ?? '已加入 Key Tasks。');
   };
 
   return (
@@ -50,162 +88,205 @@ export default function TodayWorkspace() {
           {feedback}
         </WorkflowNotice>
       )}
-      <div className="grid gap-5 xl:grid-cols-12">
-        <section className="rounded-panel border border-app-foreground/25 bg-app-surface p-5 sm:p-6 xl:col-span-7">
-          <p className="text-[10px] font-semibold tracking-[0.14em] text-app-subtle uppercase">
-            Today&apos;s One Thing
+
+      <section className="rounded-panel border border-app-foreground/30 bg-app-surface p-5 sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="goal-label">
+            {oneThing ? "Today's One Thing" : 'AI 推荐今日重点'}
           </p>
-          <h2 className="mt-3 text-xl font-semibold leading-8">
-            {oneThing?.title ??
-              suggestion?.recommendation ??
-              'Choose the work that makes today strategically successful.'}
-          </h2>
-          {oneThing ? (
-            <p className="mt-3 text-sm text-success-strong">
-              CEO Confirmed · {oneThing.type}
+          <span
+            className={`rounded-badge px-2 py-1 text-[11px] font-medium ${oneThing ? 'bg-success-soft text-success-strong' : 'border border-app-border bg-app-muted text-app-muted-foreground'}`}
+          >
+            {oneThing ? 'Confirmed' : 'Mock AI'}
+          </span>
+        </div>
+        <h2 className="mt-3 max-w-3xl text-xl font-semibold leading-8 sm:text-2xl">
+          {oneThing?.title ?? recommendedTask?.title ?? '暂时没有可推荐的任务'}
+        </h2>
+        {!oneThing && recommendedTask && (
+          <>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-app-muted-foreground">
+              {recommendationReason}
             </p>
-          ) : (
-            suggestion && (
-              <div className="mt-4">
-                <WorkflowNotice>
-                  <strong>AI Suggestion Preview</strong>
-                  <br />
-                  {suggestion.reason}
-                </WorkflowNotice>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => service.setTodayOneThing(recommendedTask.id)}
+                className="h-9 rounded-control bg-app-foreground px-4 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-foreground"
+              >
+                设为今日重点
+              </button>
+              {recommendationCandidates.length > 1 && (
                 <button
                   type="button"
                   onClick={() =>
-                    suggestion.targetId &&
-                    service.setTodayOneThing(suggestion.targetId)
+                    setSuggestionIndex(
+                      (index) => (index + 1) % recommendationCandidates.length,
+                    )
                   }
-                  className="mt-4 h-9 rounded-control bg-app-foreground px-4 text-sm font-medium text-white"
+                  className="h-9 rounded-control border border-app-border px-4 text-sm font-medium"
                 >
-                  CEO Confirm One Thing
+                  换一个
                 </button>
-              </div>
-            )
-          )}
-          <div className="mt-5 border-t border-app-border pt-4">
-            <label className="text-xs font-medium text-app-muted-foreground">
-              Choose manually
+              )}
+            </div>
+            <details className="mt-4 text-xs text-app-muted-foreground">
+              <summary className="cursor-pointer rounded-control outline-none focus-visible:ring-2 focus-visible:ring-app-foreground">
+                手动选择
+              </summary>
               <select
+                aria-label="手动选择今日重点"
                 defaultValue=""
                 onChange={(event) => {
                   if (event.target.value)
                     service.setTodayOneThing(event.target.value);
                 }}
-                className="mt-2 h-10 w-full rounded-control border border-app-border bg-white px-3 text-sm"
+                className="mt-2 h-10 w-full max-w-xl rounded-control border border-app-border bg-white px-3 text-sm"
               >
-                <option value="">Select a Task…</option>
+                <option value="">选择一个 Task…</option>
                 {available.map((task) => (
                   <option key={task.id} value={task.id}>
                     {task.title}
                   </option>
                 ))}
               </select>
-            </label>
-          </div>
-        </section>
-
-        <section className="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6 xl:col-span-5">
-          <p className="text-[10px] font-semibold tracking-[0.14em] text-app-subtle uppercase">
-            Current Sprint
-          </p>
-          <h2 className="mt-3 text-lg font-semibold">
-            {primarySprint?.title ?? 'No Primary Sprint'}
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-app-muted-foreground">
-            {primarySprint?.primaryOutcome ??
-              'Create a Primary Sprint to connect Today with strategy.'}
-          </p>
-          {primarySprint && (
-            <>
-              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-app-muted">
-                <div
-                  className="h-full rounded-full bg-app-foreground"
-                  style={{ width: `${primarySprint.progress}%` }}
-                />
-              </div>
-              <p className="mt-2 text-xs text-app-subtle">
-                {primarySprint.progress}% · Golden Time{' '}
-                {primarySprint.goldenTime}
-              </p>
-            </>
-          )}
-          <a
-            href="/sprints"
-            className="mt-4 inline-flex text-xs font-medium text-app-muted-foreground underline decoration-app-border underline-offset-4"
-          >
-            Open Sprint
-          </a>
-        </section>
-      </div>
-
-      <section
-        className="rounded-panel border border-warning/25 bg-warning-soft/50 p-5 sm:p-6"
-        aria-labelledby="attention-heading"
-      >
-        <div className="flex items-center justify-between">
-          <h2
-            id="attention-heading"
-            className="text-sm font-semibold text-warning-strong"
-          >
-            Attention
-          </h2>
-          <span className="text-xs text-warning-strong/70">
-            Follow-ups and blockers
-          </span>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          {attention.map((task) => (
-            <article
-              key={task.id}
-              className="rounded-control border border-warning/20 bg-white px-4 py-3"
-            >
-              <p className="text-sm font-medium">{task.title}</p>
-              <p className="mt-1 text-xs leading-5 text-app-muted-foreground">
-                {task.status === 'blocked'
-                  ? task.blocker?.blocker
-                  : `Waiting for ${task.waiting?.waitingFor} · follow-up ${task.waiting?.followUpAt}`}
-              </p>
-            </article>
-          ))}
-          {attention.length === 0 && (
-            <p className="text-sm text-warning-strong">No urgent follow-up.</p>
-          )}
-        </div>
+            </details>
+          </>
+        )}
       </section>
 
-      {unfinished.length > 0 && (
-        <section className="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6">
+      <section className="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold">Yesterday Follow-up</p>
-            <p className="mt-1 text-xs text-app-subtle">
-              Nothing rolls automatically. CEO decides each item.
-            </p>
+            <p className="goal-label">Current Primary Sprint</p>
+            <h2 className="mt-2 text-lg font-semibold">
+              {primarySprint?.title ?? 'No Primary Sprint'}
+            </h2>
+            {primarySprint && (
+              <p className="mt-1 text-xs text-app-subtle">
+                {formatDateRange(
+                  primarySprint.startDate,
+                  primarySprint.endDate,
+                )}{' '}
+                · Day {getSprintTiming(primarySprint, date).day} /{' '}
+                {getSprintTiming(primarySprint, date).totalDays}
+              </p>
+            )}
           </div>
-          <div className="mt-4 space-y-3">
+          <a
+            href="/sprints"
+            className="text-xs font-medium text-app-muted-foreground underline decoration-app-border underline-offset-4"
+          >
+            查看 Sprint →
+          </a>
+        </div>
+        {primarySprint && (
+          <>
+            <p className="mt-4 text-sm font-medium leading-6">
+              {primarySprint.primaryOutcome}
+            </p>
+            <div
+              className="mt-4 h-1.5 overflow-hidden rounded-full bg-app-muted"
+              role="progressbar"
+              aria-label="Current Sprint progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={primarySprint.progress}
+            >
+              <div
+                className="h-full rounded-full bg-app-foreground"
+                style={{ width: `${primarySprint.progress}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-app-subtle">
+              {primarySprint.progress}% · Golden Time{' '}
+              {primarySprint.goldenTime ?? '未设置'}
+              {primaryGoal ? ` · Goal · ${primaryGoal.title}` : ''}
+            </p>
+          </>
+        )}
+      </section>
+
+      <section className="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold">Key Tasks</h2>
+          <span className="text-xs text-app-subtle">{keyTasks.length} / 3</span>
+        </div>
+        <ul className="mt-3 divide-y divide-app-border">
+          {keyTasks.map(
+            (task) =>
+              task && (
+                <li key={task.id} className="py-3 text-sm first:pt-0 last:pb-0">
+                  {task.title}
+                </li>
+              ),
+          )}
+          {keyTasks.length === 0 && (
+            <li className="py-2 text-sm text-app-subtle">
+              今天还没有 Key Task。
+            </li>
+          )}
+        </ul>
+        <select
+          aria-label="添加 Key Task"
+          defaultValue=""
+          onChange={(event) => {
+            if (event.target.value) addKey(event.target.value);
+            event.target.value = '';
+          }}
+          className="mt-4 h-9 w-full max-w-xl rounded-control border border-app-border bg-white px-3 text-sm"
+        >
+          <option value="">+ 添加 Key Task</option>
+          {available.map((task) => (
+            <option key={task.id} value={task.id}>
+              {task.title}
+            </option>
+          ))}
+        </select>
+      </section>
+
+      {(attention.length > 0 || unfinished.length > 0) && (
+        <section
+          className="rounded-panel border border-warning/25 bg-warning-soft/35 p-5 sm:p-6"
+          aria-labelledby="attention-heading"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="attention-heading" className="text-sm font-semibold">
+              Attention
+            </h2>
+            <span className="text-xs text-warning-strong">
+              {attention.length + unfinished.length} 件需要判断
+            </span>
+          </div>
+          <div className="mt-3 divide-y divide-warning/15">
+            {attention.map((task) => (
+              <article key={task.id} className="py-3 first:pt-0 last:pb-0">
+                <p className="text-sm font-medium">{task.title}</p>
+                <p className="mt-1 text-xs leading-5 text-app-muted-foreground">
+                  {task.status === 'blocked'
+                    ? `Blocked · ${task.blocker?.blocker}`
+                    : `Waiting for ${task.waiting?.waitingFor} · 今天跟进`}
+                </p>
+              </article>
+            ))}
             {unfinished.map(
               (task) =>
                 task && (
-                  <article
-                    key={task.id}
-                    className="rounded-control border border-app-border p-4"
-                  >
+                  <article key={task.id} className="py-3 first:pt-0 last:pb-0">
                     <p className="text-sm font-medium">{task.title}</p>
-                    {task.todayAssignmentCount > 1 && (
-                      <p className="mt-1 text-xs text-warning-strong">
-                        Repeated Carry · Planning Risk (
-                        {task.todayAssignmentCount} assignments)
-                      </p>
-                    )}
+                    <p className="mt-1 text-xs text-app-muted-foreground">
+                      昨日未完成 · 需要决定下一步
+                      {task.todayAssignmentCount > 1
+                        ? ` · 已连续安排 ${task.todayAssignmentCount} 次`
+                        : ''}
+                    </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {(
                         [
-                          ['continue', 'Continue Today'],
-                          ['reschedule', 'Reschedule'],
-                          ['pool', 'Return to Pool'],
-                          ['cancel', 'Cancel'],
+                          ['continue', '今天继续'],
+                          ['reschedule', '重新安排'],
+                          ['pool', '放回任务池'],
+                          ['cancel', '取消'],
                         ] as [YesterdayDecision, string][]
                       ).map(([decision, label]) => (
                         <button
@@ -227,126 +308,64 @@ export default function TodayWorkspace() {
         </section>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold">Key Tasks</h2>
-              <p className="mt-1 text-xs text-app-subtle">Maximum 3</p>
-            </div>
-            <span className="text-xs text-app-subtle">
-              {keyTasks.length} / 3
-            </span>
-          </div>
-          <ul className="mt-4 divide-y divide-app-border">
-            {keyTasks.map(
-              (task) =>
-                task && (
-                  <li
-                    key={task.id}
-                    className="py-3 text-sm first:pt-0 last:pb-0"
-                  >
-                    {task.title}
-                  </li>
-                ),
-            )}
-            {keyTasks.length === 0 && (
-              <li className="text-sm text-app-subtle">
-                No Key Tasks confirmed.
-              </li>
-            )}
-          </ul>
-          <select
-            defaultValue=""
-            onChange={(event) => {
-              if (event.target.value) addKey(event.target.value);
-              event.target.value = '';
-            }}
-            className="mt-4 h-10 w-full rounded-control border border-app-border bg-white px-3 text-sm"
-          >
-            <option value="">Add Key Task…</option>
-            {available.map((task) => (
-              <option key={task.id} value={task.id}>
-                {task.title}
-              </option>
-            ))}
-          </select>
-        </section>
-        <section className="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6">
+      <section className="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold">Other Tasks</h2>
-          <p className="mt-1 text-xs text-app-subtle">
-            Unlimited, intentionally lower visual weight.
-          </p>
-          <ul className="mt-4 divide-y divide-app-border text-sm text-app-muted-foreground">
-            {otherTasks.map(
-              (task) =>
-                task && (
-                  <li key={task.id} className="py-3 first:pt-0 last:pb-0">
-                    {task.title}
-                  </li>
-                ),
-            )}
-            {otherTasks.length === 0 && <li>No Other Tasks selected.</li>}
-          </ul>
-          <select
-            defaultValue=""
-            onChange={(event) => {
-              if (event.target.value)
-                service.addTodayOtherTask(event.target.value);
-              event.target.value = '';
-            }}
-            className="mt-4 h-10 w-full rounded-control border border-app-border bg-white px-3 text-sm"
-          >
-            <option value="">Add Other Task…</option>
-            {available.map((task) => (
-              <option key={task.id} value={task.id}>
-                {task.title}
-              </option>
-            ))}
-          </select>
           <a
             href="/tasks"
-            className="mt-4 inline-flex text-xs font-medium underline decoration-app-border underline-offset-4"
+            className="text-xs font-medium text-app-muted-foreground underline decoration-app-border underline-offset-4"
           >
-            Open Task Pool
+            所有 Tasks →
           </a>
-        </section>
-      </div>
-
-      <section className="rounded-panel border border-app-border bg-app-surface p-5 sm:p-6">
-        <p className="text-[10px] font-semibold tracking-[0.14em] text-app-subtle uppercase">
-          CEO Brief · Mock AI
-        </p>
-        <dl className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Brief
-            label="Today's One Thing"
-            value={oneThing?.title ?? 'Awaiting CEO confirmation'}
-          />
-          <Brief
-            label="Attention"
-            value={`${attention.length} item(s) require review`}
-          />
-          <Brief
-            label="Strategic Signal"
-            value={
-              primarySprint ? 'Primary Sprint progressing' : 'No Primary Sprint'
-            }
-          />
-          <Brief
-            label="Decision Needed"
-            value={`${state.tasks.filter((task) => task.status === 'blocked').length} blocker(s)`}
-          />
-        </dl>
+        </div>
+        <ul className="mt-3 divide-y divide-app-border text-sm text-app-muted-foreground">
+          {otherTasks.map(
+            (task) =>
+              task && (
+                <li key={task.id} className="py-3 first:pt-0 last:pb-0">
+                  {task.title}
+                </li>
+              ),
+          )}
+          {otherTasks.length === 0 && (
+            <li className="py-2">暂无 Other Tasks。</li>
+          )}
+        </ul>
+        <select
+          aria-label="添加 Other Task"
+          defaultValue=""
+          onChange={(event) => {
+            if (event.target.value)
+              service.addTodayOtherTask(event.target.value);
+            event.target.value = '';
+          }}
+          className="mt-4 h-9 w-full max-w-xl rounded-control border border-app-border bg-white px-3 text-sm"
+        >
+          <option value="">+ 添加 Other Task</option>
+          {available.map((task) => (
+            <option key={task.id} value={task.id}>
+              {task.title}
+            </option>
+          ))}
+        </select>
       </section>
-    </div>
-  );
-}
 
-function Brief({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs font-semibold text-app-subtle">{label}</dt>
-      <dd className="mt-1 text-sm font-medium leading-6">{value}</dd>
+      {strategicWarning ? (
+        <WorkflowNotice tone="warning">
+          <strong>Strategic Signal</strong> · {strategicWarning}
+        </WorkflowNotice>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-control border border-app-border px-4 py-3 text-sm">
+          <span>
+            <span className="mr-2 text-success-strong">✓</span>
+            <strong>Strategy aligned</strong>
+            <span className="ml-2 text-app-muted-foreground">
+              Today&apos;s work supports the Primary Sprint.
+            </span>
+          </span>
+          <span className="text-[11px] text-app-subtle">Mock Insight</span>
+        </div>
+      )}
     </div>
   );
 }
