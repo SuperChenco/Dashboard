@@ -7,6 +7,7 @@ import { suggestTaskType } from '@/domain/advisor';
 import { waitingNeedsAttention } from '@/domain/tasks';
 import type { Task, TaskStatus } from '@/domain/workflow/types';
 import { useWorkflow } from '@/hooks/useWorkflow';
+import WorkflowLoadState from '@/components/workflow/WorkflowLoadState';
 
 type DetailMode = 'waiting' | 'blocked' | 'delegate';
 type TaskFilter = 'all' | 'strategic' | 'maintenance' | 'waiting' | 'blocked';
@@ -20,7 +21,7 @@ const filters: { id: TaskFilter; label: string }[] = [
 ];
 
 export default function TasksWorkspace() {
-  const { state, service } = useWorkflow();
+  const { state, service, isLoading, error, refresh } = useWorkflow();
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [createOpen, setCreateOpen] = useState(false);
   const [detail, setDetail] = useState<{ taskId: string; mode: DetailMode }>();
@@ -32,6 +33,10 @@ export default function TasksWorkspace() {
     () => (suggestionTask ? suggestTaskType(suggestionTask) : undefined),
     [suggestionTask],
   );
+  if (isLoading && state.tasks.length === 0)
+    return <WorkflowLoadState loading />;
+  if (error)
+    return <WorkflowLoadState error={error} onRetry={() => void refresh()} />;
   const today = new Date().toISOString().slice(0, 10);
   const visibleTasks = state.tasks.filter((task) => {
     if (['done', 'cancelled'].includes(task.status)) return false;
@@ -62,8 +67,11 @@ export default function TasksWorkspace() {
       !delegated.some((item) => item.id === task.id),
   );
 
-  const move = (taskId: string, status: TaskStatus) => {
-    const result = service.transitionTask(taskId, status);
+  const move = async (taskId: string, status: TaskStatus) => {
+    const result = await service
+      .transitionTask(taskId, status)
+      .catch(() => undefined);
+    if (!result) return;
     setFeedback(
       result.errors[0] ??
         (status === 'done'
@@ -155,27 +163,30 @@ export default function TasksWorkspace() {
       >
         <form
           className="mt-6 space-y-4"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
             const data = new FormData(event.currentTarget);
             const relation = String(data.get('relation') || '');
-            const result = service.createTask({
-              title: String(data.get('title') ?? ''),
-              type: String(data.get('type')) as
-                'strategic' | 'maintenance' | 'normal',
-              estimatedMinutes: Number(data.get('estimate')) || undefined,
-              hardDeadlineAt: String(data.get('deadline') || '') || undefined,
-              targetDate: String(data.get('target') || '') || undefined,
-              relations: relation
-                ? [
-                    {
-                      type: relation.startsWith('goal') ? 'goal' : 'sprint',
-                      entityId: relation.split(':')[1],
-                      label: String(data.get('relationLabel') || relation),
-                    },
-                  ]
-                : [],
-            });
+            const result = await service
+              .createTask({
+                title: String(data.get('title') ?? ''),
+                type: String(data.get('type')) as
+                  'strategic' | 'maintenance' | 'normal',
+                estimatedMinutes: Number(data.get('estimate')) || undefined,
+                hardDeadlineAt: String(data.get('deadline') || '') || undefined,
+                targetDate: String(data.get('target') || '') || undefined,
+                relations: relation
+                  ? [
+                      {
+                        type: relation.startsWith('goal') ? 'goal' : 'sprint',
+                        entityId: relation.split(':')[1],
+                        label: String(data.get('relationLabel') || relation),
+                      },
+                    ]
+                  : [],
+              })
+              .catch(() => undefined);
+            if (!result) return;
             setFeedback(result.errors[0] ?? '任务已加入 Inbox。');
             if (result.value) {
               setCreateOpen(false);
@@ -253,36 +264,43 @@ export default function TasksWorkspace() {
       >
         <form
           className="mt-6 space-y-4"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
             const data = new FormData(event.currentTarget);
             if (!detail) return;
             let result;
             if (detail.mode === 'waiting')
-              result = service.transitionTask(detail.taskId, 'waiting', {
-                waiting: {
-                  waitingFor: String(data.get('for') ?? ''),
-                  waitingOn: String(data.get('on') ?? ''),
-                  followUpAt: String(data.get('follow') ?? ''),
-                  lastActionAt: new Date().toISOString(),
-                },
-              });
+              result = await service
+                .transitionTask(detail.taskId, 'waiting', {
+                  waiting: {
+                    waitingFor: String(data.get('for') ?? ''),
+                    waitingOn: String(data.get('on') ?? ''),
+                    followUpAt: String(data.get('follow') ?? ''),
+                    lastActionAt: new Date().toISOString(),
+                  },
+                })
+                .catch(() => undefined);
             else if (detail.mode === 'blocked')
-              result = service.transitionTask(detail.taskId, 'blocked', {
-                blocker: {
-                  blocker: String(data.get('blocker') ?? ''),
-                  blockedAt: new Date().toISOString(),
-                  nextAction: String(data.get('next') || '') || undefined,
-                },
-              });
+              result = await service
+                .transitionTask(detail.taskId, 'blocked', {
+                  blocker: {
+                    blocker: String(data.get('blocker') ?? ''),
+                    blockedAt: new Date().toISOString(),
+                    nextAction: String(data.get('next') || '') || undefined,
+                  },
+                })
+                .catch(() => undefined);
             else
-              result = service.delegateTask(detail.taskId, {
-                responsibility: String(data.get('responsibility') ?? ''),
-                assignee: String(data.get('assignee') ?? ''),
-                myRole: String(data.get('role') ?? ''),
-                deadline: String(data.get('deadline') || '') || undefined,
-                followUpAt: String(data.get('follow') || '') || undefined,
-              });
+              result = await service
+                .delegateTask(detail.taskId, {
+                  responsibility: String(data.get('responsibility') ?? ''),
+                  assignee: String(data.get('assignee') ?? ''),
+                  myRole: String(data.get('role') ?? ''),
+                  deadline: String(data.get('deadline') || '') || undefined,
+                  followUpAt: String(data.get('follow') || '') || undefined,
+                })
+                .catch(() => undefined);
+            if (!result) return;
             setFeedback(result.errors[0] ?? 'Task 已更新。');
             if (result.value) setDetail(undefined);
           }}
@@ -350,13 +368,17 @@ export default function TasksWorkspace() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  service.confirmTaskType(
-                    suggestion.targetId!,
-                    suggestion.recommendation.toLowerCase() as
-                      'strategic' | 'normal',
-                  );
-                  setSuggestionId(undefined);
+                onClick={async () => {
+                  try {
+                    await service.confirmTaskType(
+                      suggestion.targetId!,
+                      suggestion.recommendation.toLowerCase() as
+                        'strategic' | 'normal',
+                    );
+                    setSuggestionId(undefined);
+                  } catch {
+                    // The repository publishes the user-facing failure state.
+                  }
                 }}
                 className="h-9 rounded-control bg-app-foreground px-4 text-sm font-medium text-white"
               >
@@ -389,13 +411,17 @@ export default function TasksWorkspace() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  service.confirmBlockedNextAction(
-                    nextActionTaskId,
-                    '明确最终决策人，并安排一次 15 分钟确认',
-                  );
-                  setNextActionTaskId(undefined);
-                  setFeedback('已确认阻塞项的下一步。');
+                onClick={async () => {
+                  try {
+                    await service.confirmBlockedNextAction(
+                      nextActionTaskId,
+                      '明确最终决策人，并安排一次 15 分钟确认',
+                    );
+                    setNextActionTaskId(undefined);
+                    setFeedback('已确认阻塞项的下一步。');
+                  } catch {
+                    // The repository publishes the user-facing failure state.
+                  }
                 }}
                 className="h-9 rounded-control bg-app-foreground px-4 text-sm font-medium text-white"
               >

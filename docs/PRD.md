@@ -1268,7 +1268,7 @@ Idea
 
 每条核心业务数据都必须有：
 
-> user_id / owner_id
+> user_id
 
 ## 21.2 AI权限
 
@@ -1366,9 +1366,9 @@ AI默认：
 完成标准：
 
 ``` text
-npm install
-npm run dev
-npm run build
+pnpm install
+pnpm dev
+pnpm build
 ```
 
 均正常。
@@ -1410,71 +1410,47 @@ npm run build
 
 ------------------------------------------------------------------------
 
-## Phase 3：Companies + People + Projects + Opportunities
+## Phase 3：Make It Real（v0.3.0）
 
-建立核心商业数据关系。
-
-实现：
-
--   公司
--   联系人
--   项目
--   商机
+建立 Supabase PostgreSQL、Owner Auth、RLS、Cloud Repository、LocalStorage
+Migration、跨设备刷新同步、错误状态、基础 PWA、JSON Export 与 Vercel
+生产边界。
 
 ------------------------------------------------------------------------
 
-## Phase 4：Supabase Real Data
+## Phase 4：AI Chief of Staff（v0.4.0）
 
-把 mock 数据替换成真实数据库。
-
-完成：
-
--   Auth
--   RLS
--   CRUD
--   migrations
--   seed
+以 server-side OpenAI Provider 替换 Mock AI，首批实现 Today、Task、Idea、
+Strategic Drift、Sprint Review、Goal Evidence 与 CEO Brief。所有重要动作仍需
+CEO Confirm。
 
 ------------------------------------------------------------------------
 
-## Phase 5：AI Advisor V1
+## Phase 5：Business Operating Layer（v0.5.0）
 
-实现：
-
--   AI分析想法
--   AI任务整理建议
--   AI目标停滞分析
--   AI商机分析
--   AI客户 briefing
-
-所有重要动作：
-
-> Confirm first
+正式实现 Companies、People、Projects、Opportunities、实体关联和全局搜索。
 
 ------------------------------------------------------------------------
 
-## Phase 6：Time / Attention
+## Phase 6：Executive Intelligence（v0.6.0）
 
-实现：
-
--   activity log
--   task timing
--   basic time analysis
--   strategic drift detection
+实现 CEO Dashboard、Company/Opportunity Intelligence、Goal Stagnation、
+Attention Economy 与 CEO Decision Queue。
 
 ------------------------------------------------------------------------
 
-## Phase 7：FindingMat Management
+## Phase 7：FindingMat Strategic Command（v0.7.0）
 
-CEO OS开始真正管理 FindingMat：
+管理 FindingMat 的战略、Goals、Sprints、Projects、Opportunities、KPIs、风险、
+时间和决策，不承载 FindingMat 内部材料产品。
 
--   FindingMat Goal
--   Sprint
--   KPI
--   Project
--   Opportunity
--   Time investment
--   Strategic alerts
+------------------------------------------------------------------------
+
+## Phase 8–10
+
+-   Phase 8 / v0.8.0：Time、Attention、Daily/Weekly/Sprint Review、轻量 Learning 与 Health。
+-   Phase 9 / v0.9.0：Production Hardening、Backup、Audit、Security、Performance、Accessibility 与 Device QA。
+-   Phase 10 / v1.0.0：Product cleanup、语言与 UX 一致性、最终数据安全和发布验收。
 
 ------------------------------------------------------------------------
 

@@ -6,11 +6,11 @@ P_CEO_OS 负责管理目标、Sprint、任务、想法、公司、联系人、�
 
 ## 当前阶段
 
-Phase 2：Core Workflow（已实现，等待 CEO 验收）。
+稳定版本：`v0.2.0`。当前开发：Phase 3 — Make It Real。
 
-当前包含 Goal → Sprint → Task → Today → Review 核心工作流、Idea Local Mock 捕获与主动 Mock AI 分析、Repository Contract、本地 Audit History，以及 Phase 1 响应式 Shell。
+当前包含 Goal → Sprint → Task → Today → Review 核心工作流、Idea 捕获、主动 Mock AI 分析、Audit History，以及响应式 Shell。
 
-Phase 2 数据只保存在当前浏览器 LocalStorage。当前没有数据库表、Migration、真实 Auth、生产业务数据或 OpenAI 调用。
+Phase 3 增加 Supabase PostgreSQL、Owner Auth、RLS、Cloud Repository、显式 LocalStorage Migration、基础 PWA 与 JSON Export。OpenAI 仍未接入。
 
 ## 核心页面
 
@@ -27,7 +27,7 @@ Phase 2 数据只保存在当前浏览器 LocalStorage。当前没有数据库�
 - React Islands
 - Tailwind CSS
 - Vercel Adapter
-- Supabase PostgreSQL（仅代码边界，尚未连接）
+- Supabase PostgreSQL + Auth + RLS
 - Vitest
 - ESLint + Prettier
 - pnpm
@@ -45,7 +45,9 @@ cp .env.example .env
 pnpm dev
 ```
 
-Phase 2 不需要填写真实 Supabase 或 OpenAI 凭据即可完成类型检查、测试和构建。
+不配置 Supabase 时，本地开发使用 LocalStorage fallback；生产环境会 fail closed。连接真实 Supabase 时，只把 `PUBLIC_SUPABASE_URL` 和 publishable key 写入本地 `.env` 或 Vercel Secure Environment Variables，绝不提交密钥。
+
+Owner 账号必须在 Supabase Dashboard 后台创建，产品不开放 Sign Up。数据库 migration 位于 `supabase/migrations/`，必须通过受审查的 Supabase migration 流程应用。
 
 ## 常用命令
 
@@ -66,5 +68,6 @@ pnpm build
 - [AI 权限规则](docs/AI_RULES.md)
 - [开发路线图](docs/ROADMAP.md)
 - [Phase 2 Business Rules](docs/PHASE_2_BUSINESS_RULES.md)
+- [Phase 3 Make It Real](docs/PHASE_3_MAKE_IT_REAL.md)
 
 任何 Phase 开始前都应先阅读相关文档，完成后执行测试、构建和控制台检查，再进入下一阶段。

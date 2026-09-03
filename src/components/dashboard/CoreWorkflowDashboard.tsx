@@ -3,9 +3,14 @@ import { isGoalStagnant } from '@/domain/goals';
 import { getMaintenanceFocusRisk } from '@/domain/sprints';
 import { waitingNeedsAttention } from '@/domain/tasks';
 import { useWorkflow } from '@/hooks/useWorkflow';
+import WorkflowLoadState from '@/components/workflow/WorkflowLoadState';
 
 export default function CoreWorkflowDashboard() {
-  const { state, service } = useWorkflow();
+  const { state, service, isLoading, error, refresh } = useWorkflow();
+  if (isLoading && state.tasks.length === 0)
+    return <WorkflowLoadState loading />;
+  if (error)
+    return <WorkflowLoadState error={error} onRetry={() => void refresh()} />;
   const today = new Date().toISOString().slice(0, 10);
   const plan =
     state.todayPlans.find((item) => item.date === today) ?? state.todayPlans[0];
@@ -58,7 +63,9 @@ export default function CoreWorkflowDashboard() {
               type="button"
               onClick={() =>
                 suggestion.targetId &&
-                service.setTodayOneThing(suggestion.targetId)
+                void service
+                  .setTodayOneThing(suggestion.targetId)
+                  .catch(() => undefined)
               }
               className="mt-5 h-9 rounded-control bg-app-foreground px-4 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-foreground"
             >

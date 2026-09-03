@@ -12,16 +12,21 @@ import {
   type SprintReviewDecision,
 } from '@/domain/sprints';
 import { useWorkflow } from '@/hooks/useWorkflow';
+import WorkflowLoadState from '@/components/workflow/WorkflowLoadState';
 import type { Sprint } from '@/domain/workflow/types';
 
 export default function SprintsWorkspace() {
-  const { state, service } = useWorkflow();
+  const { state, service, isLoading, error, refresh } = useWorkflow();
   const [createOpen, setCreateOpen] = useState(false);
   const [reviewId, setReviewId] = useState<string>();
   const [feedback, setFeedback] = useState<{
     errors: string[];
     warnings: string[];
   }>({ errors: [], warnings: [] });
+  if (isLoading && state.sprints.length === 0)
+    return <WorkflowLoadState loading />;
+  if (error)
+    return <WorkflowLoadState error={error} onRetry={() => void refresh()} />;
   const focusRisk = getMaintenanceFocusRisk(state.sprints);
   const today = new Date().toISOString().slice(0, 10);
   const primary = state.sprints.find(
@@ -130,19 +135,22 @@ export default function SprintsWorkspace() {
       >
         <form
           className="mt-6 space-y-4"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
             const data = new FormData(event.currentTarget);
-            const result = service.createSprint({
-              title: String(data.get('title') ?? ''),
-              kind: String(data.get('kind')) as 'primary' | 'maintenance',
-              primaryGoalId: String(data.get('goal') || '') || undefined,
-              secondaryGoalIds: data.getAll('secondaryGoals').map(String),
-              primaryOutcome: String(data.get('outcome') ?? ''),
-              startDate: String(data.get('start') ?? ''),
-              endDate: String(data.get('end') ?? ''),
-              goldenTime: String(data.get('golden') || '') || undefined,
-            });
+            const result = await service
+              .createSprint({
+                title: String(data.get('title') ?? ''),
+                kind: String(data.get('kind')) as 'primary' | 'maintenance',
+                primaryGoalId: String(data.get('goal') || '') || undefined,
+                secondaryGoalIds: data.getAll('secondaryGoals').map(String),
+                primaryOutcome: String(data.get('outcome') ?? ''),
+                startDate: String(data.get('start') ?? ''),
+                endDate: String(data.get('end') ?? ''),
+                goldenTime: String(data.get('golden') || '') || undefined,
+              })
+              .catch(() => undefined);
+            if (!result) return;
             setFeedback({ errors: result.errors, warnings: result.warnings });
             if (result.value) setCreateOpen(false);
           }}
@@ -219,18 +227,21 @@ export default function SprintsWorkspace() {
       >
         <form
           className="mt-6 space-y-4"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
             const data = new FormData(event.currentTarget);
             const decision = String(
               data.get('decision'),
             ) as SprintReviewDecision;
-            const result = service.reviewSprint(
-              reviewId!,
-              decision,
-              String(data.get('reason') || '') || undefined,
-              String(data.get('end') || '') || undefined,
-            );
+            const result = await service
+              .reviewSprint(
+                reviewId!,
+                decision,
+                String(data.get('reason') || '') || undefined,
+                String(data.get('end') || '') || undefined,
+              )
+              .catch(() => undefined);
+            if (!result) return;
             setFeedback({ errors: result.errors, warnings: result.warnings });
             if (result.value) setReviewId(undefined);
           }}

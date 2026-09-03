@@ -3,13 +3,18 @@ import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import WorkflowNotice from '@/components/workflow/WorkflowNotice';
 import { useWorkflow } from '@/hooks/useWorkflow';
+import WorkflowLoadState from '@/components/workflow/WorkflowLoadState';
 
 export default function IdeasWorkspace() {
-  const { state, service } = useWorkflow();
+  const { state, service, isLoading, error, refresh } = useWorkflow();
   const [text, setText] = useState('');
   const [confirmId, setConfirmId] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
   const [collapsedAnalysis, setCollapsedAnalysis] = useState<string[]>([]);
+  if (isLoading && state.ideas.length === 0)
+    return <WorkflowLoadState loading />;
+  if (error)
+    return <WorkflowLoadState error={error} onRetry={() => void refresh()} />;
   const unanalyzed = state.ideas.filter((idea) => !idea.analysis).length;
 
   return (
@@ -23,9 +28,12 @@ export default function IdeasWorkspace() {
         </div>
         <form
           className="mt-5"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
-            const result = service.createIdea(text);
+            const result = await service
+              .createIdea(text)
+              .catch(() => undefined);
+            if (!result) return;
             setFeedback(result.errors[0] ?? '想法已保存。');
             if (result.value) setText('');
           }}
@@ -70,7 +78,9 @@ export default function IdeasWorkspace() {
               {!idea.analysis && (
                 <button
                   type="button"
-                  onClick={() => service.analyzeIdea(idea.id)}
+                  onClick={() =>
+                    void service.analyzeIdea(idea.id).catch(() => undefined)
+                  }
                   className="h-9 rounded-control border border-app-border px-3 text-sm"
                 >
                   AI 分析
@@ -156,8 +166,11 @@ export default function IdeasWorkspace() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  const result = service.confirmIdeaTaskConversion(confirmId);
+                onClick={async () => {
+                  const result = await service
+                    .confirmIdeaTaskConversion(confirmId)
+                    .catch(() => undefined);
+                  if (!result) return;
                   setFeedback(
                     result.errors[0] ?? 'Task 已创建，原始 Idea 已保留。',
                   );
