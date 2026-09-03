@@ -95,7 +95,7 @@ React Island
     → Domain Rules
     → Workflow Repository Contract
       → Phase 2 LocalStorage Adapter
-      → Future Phase 4 Supabase Adapter
+      → Future Phase 3 Supabase Adapter
 ```
 
 LocalStorage key: `p_ceo_os.phase2.workflow.v1`.

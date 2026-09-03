@@ -46,16 +46,16 @@ import type { WorkflowRepository } from '@/repositories/workflow.repository';
 export class WorkflowService {
   constructor(private readonly repository: WorkflowRepository) {}
 
-  getState(): WorkflowState {
+  async getState(): Promise<WorkflowState> {
     return this.repository.load();
   }
 
-  createGoal(input: CreateGoalInput): RuleResult<Goal> {
+  async createGoal(input: CreateGoalInput): Promise<RuleResult<Goal>> {
     const validation = validateGoalInput(input);
     if (!validation.value) {
       return { errors: validation.errors, warnings: validation.warnings };
     }
-    const state = this.getState();
+    const state = await this.getState();
     const now = new Date().toISOString();
     const goal: Goal = {
       id: createEntityId('goal'),
@@ -77,7 +77,7 @@ export class WorkflowService {
       updatedAt: now,
     };
     const warning = getGoalHierarchyWarning(input.parentGoalId, state.goals);
-    this.commit(
+    await this.commit(
       { ...state, goals: [...state.goals, goal] },
       this.audit(
         'goal',
@@ -90,12 +90,12 @@ export class WorkflowService {
     return { value: goal, errors: [], warnings: warning ? [warning] : [] };
   }
 
-  createSprint(input: CreateSprintInput): RuleResult<Sprint> {
+  async createSprint(input: CreateSprintInput): Promise<RuleResult<Sprint>> {
     const validation = validateSprintInput(input);
     if (!validation.value) {
       return { errors: validation.errors, warnings: validation.warnings };
     }
-    const state = this.getState();
+    const state = await this.getState();
     const now = new Date().toISOString();
     const sprint: Sprint = {
       id: createEntityId('sprint'),
@@ -116,7 +116,7 @@ export class WorkflowService {
     let sprints = [...state.sprints, sprint];
     if (sprint.kind === 'primary')
       sprints = activatePrimarySprint(sprint.id, sprints, now);
-    this.commit(
+    await this.commit(
       { ...state, sprints },
       this.audit(
         'sprint',
@@ -129,13 +129,13 @@ export class WorkflowService {
     return { value: sprint, errors: [], warnings: validation.warnings };
   }
 
-  reviewSprint(
+  async reviewSprint(
     sprintId: string,
     decision: SprintReviewDecision,
     reason?: string,
     newEndDate?: string,
-  ): RuleResult<Sprint> {
-    const state = this.getState();
+  ): Promise<RuleResult<Sprint>> {
+    const state = await this.getState();
     const sprint = state.sprints.find((item) => item.id === sprintId);
     if (!sprint) return { errors: ['Sprint not found.'], warnings: [] };
     const result = reviewSprint(sprint, decision, reason, newEndDate);
@@ -160,7 +160,7 @@ export class WorkflowService {
         sprints = activatePrimarySprint(next.id, sprints, now);
       }
     }
-    this.commit(
+    await this.commit(
       { ...state, sprints },
       this.audit(
         'sprint',
@@ -173,14 +173,12 @@ export class WorkflowService {
     return result;
   }
 
-  createTask(
-    input: CreateTaskInput,
-  ): RuleResult<ReturnType<WorkflowService['getState']>['tasks'][number]> {
-    const state = this.getState();
+  async createTask(input: CreateTaskInput) {
+    const state = await this.getState();
     const now = new Date().toISOString();
     const result = createTaskDraft(input, createEntityId('task'), now);
     if (!result.value) return result;
-    this.commit(
+    await this.commit(
       { ...state, tasks: [...state.tasks, result.value] },
       this.audit(
         'task',
@@ -193,18 +191,18 @@ export class WorkflowService {
     return result;
   }
 
-  transitionTask(
+  async transitionTask(
     taskId: string,
     status: TaskStatus,
     details?: { waiting?: WaitingDetails; blocker?: BlockerDetails },
   ) {
-    const state = this.getState();
+    const state = await this.getState();
     const task = state.tasks.find((item) => item.id === taskId);
     if (!task) return { errors: ['Task not found.'], warnings: [] };
     const now = new Date().toISOString();
     const result = transitionTask(task, status, now, details);
     if (!result.value) return result;
-    this.commit(
+    await this.commit(
       {
         ...state,
         tasks: state.tasks.map((item) =>
@@ -222,14 +220,14 @@ export class WorkflowService {
     return result;
   }
 
-  delegateTask(taskId: string, delegation: DelegationDetails) {
-    const state = this.getState();
+  async delegateTask(taskId: string, delegation: DelegationDetails) {
+    const state = await this.getState();
     const task = state.tasks.find((item) => item.id === taskId);
     if (!task) return { errors: ['Task not found.'], warnings: [] };
     const now = new Date().toISOString();
     const result = delegateTask(task, delegation, now);
     if (!result.value) return result;
-    this.commit(
+    await this.commit(
       {
         ...state,
         tasks: state.tasks.map((item) =>
@@ -247,16 +245,16 @@ export class WorkflowService {
     return result;
   }
 
-  confirmTaskType(
+  async confirmTaskType(
     taskId: string,
     type: 'strategic' | 'maintenance' | 'normal',
   ) {
-    const state = this.getState();
+    const state = await this.getState();
     const task = state.tasks.find((item) => item.id === taskId);
     if (!task) return;
     const now = new Date().toISOString();
     const updated = { ...task, type, updatedAt: now };
-    this.commit(
+    await this.commit(
       {
         ...state,
         tasks: state.tasks.map((item) => (item.id === taskId ? updated : item)),
@@ -271,8 +269,11 @@ export class WorkflowService {
     );
   }
 
-  confirmBlockedNextAction(taskId: string, nextAction: string): void {
-    const state = this.getState();
+  async confirmBlockedNextAction(
+    taskId: string,
+    nextAction: string,
+  ): Promise<void> {
+    const state = await this.getState();
     const task = state.tasks.find((item) => item.id === taskId);
     if (!task?.blocker) return;
     const now = new Date().toISOString();
@@ -281,7 +282,7 @@ export class WorkflowService {
       blocker: { ...task.blocker, nextAction },
       updatedAt: now,
     };
-    this.commit(
+    await this.commit(
       {
         ...state,
         tasks: state.tasks.map((item) => (item.id === taskId ? updated : item)),
@@ -296,15 +297,15 @@ export class WorkflowService {
     );
   }
 
-  setTodayOneThing(taskId: string): void {
-    this.updateToday('one-thing', taskId);
+  async setTodayOneThing(taskId: string): Promise<void> {
+    await this.updateToday('one-thing', taskId);
   }
-  addTodayKeyTask(taskId: string) {
+  async addTodayKeyTask(taskId: string) {
     return this.updateToday('key', taskId);
   }
 
-  addTodayOtherTask(taskId: string): void {
-    const state = this.getState();
+  async addTodayOtherTask(taskId: string): Promise<void> {
+    const state = await this.getState();
     const today = this.today(state);
     const now = new Date().toISOString();
     const updated = {
@@ -314,12 +315,10 @@ export class WorkflowService {
         : [...today.otherTaskIds, taskId],
       updatedAt: now,
     };
-    this.commit(
+    await this.commit(
       {
         ...state,
-        todayPlans: state.todayPlans.map((plan) =>
-          plan.id === today.id ? updated : plan,
-        ),
+        todayPlans: this.upsertTodayPlan(state.todayPlans, updated),
       },
       this.audit(
         'today',
@@ -331,19 +330,20 @@ export class WorkflowService {
     );
   }
 
-  resolveYesterday(taskId: string, decision: YesterdayDecision): void {
-    const state = this.getState();
+  async resolveYesterday(
+    taskId: string,
+    decision: YesterdayDecision,
+  ): Promise<void> {
+    const state = await this.getState();
     const today = this.today(state);
     const task = state.tasks.find((item) => item.id === taskId);
     if (!task) return;
     const now = new Date().toISOString();
     const result = resolveYesterdayTask(today, task, decision, now);
-    this.commit(
+    await this.commit(
       {
         ...state,
-        todayPlans: state.todayPlans.map((plan) =>
-          plan.id === today.id ? result.plan : plan,
-        ),
+        todayPlans: this.upsertTodayPlan(state.todayPlans, result.plan),
         tasks: state.tasks.map((item) =>
           item.id === taskId ? result.task : item,
         ),
@@ -358,12 +358,12 @@ export class WorkflowService {
     );
   }
 
-  createIdea(text: string) {
-    const state = this.getState();
+  async createIdea(text: string) {
+    const state = await this.getState();
     const now = new Date().toISOString();
     const result = createIdea(text, createEntityId('idea'), now);
     if (!result.value) return result;
-    this.commit(
+    await this.commit(
       { ...state, ideas: [result.value, ...state.ideas] },
       this.audit(
         'idea',
@@ -376,8 +376,8 @@ export class WorkflowService {
     return result;
   }
 
-  analyzeIdea(ideaId: string): void {
-    const state = this.getState();
+  async analyzeIdea(ideaId: string): Promise<void> {
+    const state = await this.getState();
     const idea = state.ideas.find((item) => item.id === ideaId);
     if (!idea) return;
     const now = new Date().toISOString();
@@ -386,7 +386,7 @@ export class WorkflowService {
       analyzeIdeaDeterministically(idea, now)!,
       now,
     );
-    this.commit(
+    await this.commit(
       {
         ...state,
         ideas: state.ideas.map((item) => (item.id === ideaId ? updated : item)),
@@ -401,14 +401,14 @@ export class WorkflowService {
     );
   }
 
-  confirmIdeaTaskConversion(ideaId: string) {
-    const state = this.getState();
+  async confirmIdeaTaskConversion(ideaId: string) {
+    const state = await this.getState();
     const idea = state.ideas.find((item) => item.id === ideaId);
     if (!idea) return { errors: ['Idea not found.'], warnings: [] };
     const now = new Date().toISOString();
     const result = confirmIdeaToTask(idea, createEntityId('task'), now);
     if (!result.value) return result;
-    this.commit(
+    await this.commit(
       {
         ...state,
         ideas: state.ideas.map((item) =>
@@ -427,8 +427,8 @@ export class WorkflowService {
     return result;
   }
 
-  private updateToday(kind: 'one-thing' | 'key', taskId: string) {
-    const state = this.getState();
+  private async updateToday(kind: 'one-thing' | 'key', taskId: string) {
+    const state = await this.getState();
     const today = this.today(state);
     const now = new Date().toISOString();
     const result =
@@ -445,12 +445,10 @@ export class WorkflowService {
           }
         : task,
     );
-    this.commit(
+    await this.commit(
       {
         ...state,
-        todayPlans: state.todayPlans.map((plan) =>
-          plan.id === today.id ? result.value! : plan,
-        ),
+        todayPlans: this.upsertTodayPlan(state.todayPlans, result.value),
         tasks,
       },
       this.audit('today', today.id, kind, `Assigned Task ${taskId}`, now),
@@ -460,9 +458,27 @@ export class WorkflowService {
 
   private today(state: WorkflowState) {
     const date = new Date().toISOString().slice(0, 10);
-    return (
-      state.todayPlans.find((plan) => plan.date === date) ?? state.todayPlans[0]
-    );
+    const existing = state.todayPlans.find((plan) => plan.date === date);
+    if (existing) return existing;
+    const now = new Date().toISOString();
+    return {
+      id: createEntityId('today'),
+      date,
+      keyTaskIds: [],
+      otherTaskIds: [],
+      unfinishedTaskIds: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  private upsertTodayPlan(
+    plans: WorkflowState['todayPlans'],
+    updated: WorkflowState['todayPlans'][number],
+  ) {
+    return plans.some((plan) => plan.id === updated.id)
+      ? plans.map((plan) => (plan.id === updated.id ? updated : plan))
+      : [...plans, updated];
   }
 
   private audit(
@@ -482,8 +498,8 @@ export class WorkflowService {
     };
   }
 
-  private commit(state: WorkflowState, audit: AuditEvent): void {
-    this.repository.save({
+  private async commit(state: WorkflowState, audit: AuditEvent): Promise<void> {
+    await this.repository.save({
       ...state,
       auditEvents: [...state.auditEvents, audit],
     });

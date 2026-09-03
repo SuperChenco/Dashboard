@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 
 import Icon from '@/components/ui/Icon';
 import Modal from '@/components/ui/Modal';
-import { LocalWorkflowRepository } from '@/repositories/local/workflow-local.repository';
+import { createWorkflowRepository } from '@/repositories/factory';
 import { WorkflowService } from '@/services/workflow/workflow.service';
 
 interface QuickIdeaInputProps {
@@ -21,6 +21,7 @@ const triggerClasses = {
 export default function QuickIdeaInput({
   variant = 'primary',
 }: QuickIdeaInputProps) {
+  const repositoryKind = createWorkflowRepository().kind;
   const [isOpen, setIsOpen] = useState(false);
   const [idea, setIdea] = useState('');
   const [isSaved, setIsSaved] = useState(false);
@@ -49,17 +50,25 @@ export default function QuickIdeaInput({
       <Modal
         open={isOpen}
         title="快速记录新想法"
-        description="先记录，暂不分类。保存到当前浏览器 Local Mock，不调用 AI。"
+        description={
+          repositoryKind === 'supabase'
+            ? '先记录，暂不分类。确认写入云端后才显示成功，不调用 AI。'
+            : '先记录，暂不分类。当前开发环境保存到浏览器 LocalStorage，不调用 AI。'
+        }
         onClose={close}
       >
         {isSaved ? (
           <div className="mt-6" aria-live="polite">
             <div className="rounded-panel border border-success/20 bg-success-soft px-4 py-4">
               <p className="text-sm font-semibold text-success-strong">
-                Idea 已保存到 Local Mock
+                {repositoryKind === 'supabase'
+                  ? 'Idea 已保存到云端'
+                  : 'Idea 已保存到本地开发数据'}
               </p>
               <p className="mt-1 text-sm leading-6 text-success-strong/80">
-                未写入数据库，也没有自动触发 AI 分析。可在 Ideas 页面继续处理。
+                {repositoryKind === 'supabase'
+                  ? '云端已确认写入；没有自动触发 AI 分析。'
+                  : '仅限当前浏览器开发环境；没有自动触发 AI 分析。'}
               </p>
             </div>
             <div className="mt-5 flex justify-end">
@@ -75,13 +84,14 @@ export default function QuickIdeaInput({
         ) : (
           <form
             className="mt-6"
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
               if (idea.trim()) {
-                const service = new WorkflowService(
-                  new LocalWorkflowRepository(),
-                );
-                if (service.createIdea(idea).value) setIsSaved(true);
+                const service = new WorkflowService(createWorkflowRepository());
+                const result = await service
+                  .createIdea(idea)
+                  .catch(() => undefined);
+                if (result?.value) setIsSaved(true);
               }
             }}
           >
@@ -100,7 +110,7 @@ export default function QuickIdeaInput({
             />
             <div className="mt-2 flex items-center justify-between gap-4">
               <span className="rounded-badge border border-app-border bg-app-muted px-2 py-0.5 text-[11px] font-medium text-app-muted-foreground">
-                Phase 2 Local Mock
+                {repositoryKind === 'supabase' ? 'Cloud data' : 'Local dev'}
               </span>
               <span className="text-xs text-app-muted-foreground">
                 {idea.length} / 1000

@@ -1,52 +1,26 @@
-# P_CEO_OS V1 Roadmap
+# P_CEO_OS Release Roadmap
 
-## Phase 0：Project Foundation
+本路线图以 CEO 批准的 `v0.2.0 → v1.0` Master Development Plan 为准。每个 Phase 使用独立分支、PR、验收和 Release Tag，不跨阶段混开发。
 
-状态：已完成并通过 CEO 验收。
+## 已发布
 
-建立 Astro Server、React Islands、Tailwind、Vercel Adapter、strict TypeScript、pnpm、Git、文档、基础 Layout、最小首页、Supabase client boundary、环境变量 schema、AI interface 和验证脚本。
+- `v0.1.x`：Project Foundation 与 CEO OS Shell。
+- `v0.2.0`：Goal → Sprint → Task → Today → Review、Ideas、Audit History、LocalStorage Repository 与 Mock Advisor。
 
-不创建真实数据库、Migration、Auth、业务数据或 AI 调用。
+## 当前
 
-## Phase 1：CEO OS Shell
+### v0.3.0 — Phase 3: Make It Real
 
-状态：已完成并通过 CEO 验收。
+Supabase PostgreSQL、Email + Password Owner Auth、RLS、Cloud Repository、LocalStorage Migration、跨设备刷新同步、错误状态、Mobile、基础 PWA、JSON Export 和 Vercel 生产边界。
 
-建立 App Layout、Sidebar、Header、Dashboard shell、响应式导航、快速想法 Mock 交互和 Empty State。AI Brief 只提供明确标记的静态 Mock Insight。
+## 后续（严格按顺序）
 
-## Phase 2：Goals + Tasks + Ideas
+- `v0.4.0` — Phase 4: AI Chief of Staff
+- `v0.5.0` — Phase 5: Business Operating Layer
+- `v0.6.0` — Phase 6: Executive Intelligence
+- `v0.7.0` — Phase 7: FindingMat Strategic Command
+- `v0.8.0` — Phase 8: Time / Attention / Review
+- `v0.9.0` — Phase 9: Production Hardening
+- `v1.0.0` — Personal CEO OS Stable Release
 
-状态：已实现，等待 CEO 验收。
-
-完成 Goal → Sprint → Task → Today → Review 核心工作流，以及 Idea 捕获、主动 Mock AI 分析和 CEO 确认转换。加入基础 Strategic Drift 与 Goal Stagnation 确定性规则；复杂时间分析仍留在 Phase 6。六个月未查看提醒不属于 V1。
-
-## Phase 3：Companies + People + Projects + Opportunities
-
-建立公司、联系人、项目和商机关系，以及短期商业价值与长期战略价值视图。
-
-## Phase 4：Supabase Real Data
-
-创建正式 Migration、Email + Password Auth、RLS、CRUD、seed 和真实 repository。Magic Link 暂不实现。
-
-## Phase 5：AI Advisor V1
-
-实现想法分析、任务整理建议、目标停滞分析、商机分析和客户 briefing。所有重要动作先确认。
-
-## Phase 6：Time / Attention
-
-实现 activity log、task timing、基础时间分析和战略偏航检测，不进行全电脑监控。
-
-## Phase 7：FindingMat Management
-
-管理 FindingMat 的战略、Goals、Sprint、KPI、项目、商机、时间投入和战略风险，不实现 FindingMat 内部产品能力。
-
-## 每阶段完成标准
-
-```text
-Implement
-→ Typecheck / Lint / Test
-→ Build
-→ Dev server and console check
-→ Summarize
-→ Wait for CEO confirmation
-```
+Phase 3 不接 OpenAI，不实现 Companies/People/Projects/Opportunities 的完整业务层，也不进入 Phase 4。

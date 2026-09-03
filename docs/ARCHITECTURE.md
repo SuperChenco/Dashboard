@@ -3,7 +3,8 @@
 ## 状态
 
 - 基线：CEO 已确认
-- 当前阶段：Phase 2（已实现，等待 CEO 验收）
+- 稳定基线：v0.2.0 / Phase 2 已发布
+- 当前阶段：Phase 3 — Make It Real
 - 部署目标：Vercel
 
 ## 总体架构
@@ -56,18 +57,32 @@ Page / Component
       → Mock or Supabase implementation
 ```
 
-Phase 2 和 Phase 3 使用 mock repository 时，页面依赖相同 contract，Phase 4 才替换为真实 Supabase implementation。Phase 2 LocalStorage 不是数据库，也不承担多用户、同步、加密或生产可靠性。
+Phase 3 将 Repository contract 升级为异步接口，并增加 Supabase implementation。配置 Supabase 时，云端 PostgreSQL 是唯一真源；LocalStorage 只作为 CEO 明确确认的迁移来源。未配置 Supabase 时仅开发环境允许 LocalStorage fallback，生产环境 fail closed。
 
 ## Supabase
 
-Phase 0–2 只建立：
+Phase 3 建立：
 
-- 环境变量 schema
-- Browser client factory
-- Request-scoped server client factory
-- 未配置时的明确失败行为
+- Email + Password 登录、退出、session restore/refresh 和 protected routes
+- PostgreSQL normalized schema、transactional workflow RPC 与 RLS
+- Supabase Repository Adapter
+- LocalStorage 显式、幂等迁移向导
+- Owner JSON export
 
-Phase 0–2 不创建 Supabase 项目、表、Migration、Auth 页面、RLS 或业务数据。
+浏览器只使用 publishable key，并依赖用户 session 与 RLS。项目中不使用 service-role key。Owner 账号必须由 CEO 在 Supabase 后台创建，产品 UI 不提供公开注册。
+
+## Phase 3 请求路径
+
+```text
+Astro middleware
+  → validate/refresh Supabase session
+  → protected Astro page
+    → React Island
+      → Workflow Service
+        → Supabase Repository
+          → caller-scoped transactional RPC
+            → normalized PostgreSQL tables + RLS
+```
 
 ## FindingMat 边界
 

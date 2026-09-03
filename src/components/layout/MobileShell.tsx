@@ -11,9 +11,15 @@ import {
 
 interface MobileShellProps {
   activePath: string;
+  userEmail?: string;
+  authMode: 'supabase' | 'local-development' | 'unconfigured';
 }
 
-export default function MobileShell({ activePath }: MobileShellProps) {
+export default function MobileShell({
+  activePath,
+  userEmail,
+  authMode,
+}: MobileShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLDialogElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -107,7 +113,14 @@ export default function MobileShell({ activePath }: MobileShellProps) {
             })}
           </nav>
           <div className="border-t border-app-border p-4 text-xs text-app-subtle">
-            Phase 2 · Local Mock
+            <p className="truncate">{userEmail ?? 'Local development'}</p>
+            {authMode === 'supabase' && (
+              <form action="/api/auth/sign-out" method="post" className="mt-2">
+                <button type="submit" className="underline underline-offset-4">
+                  Sign Out
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </dialog>

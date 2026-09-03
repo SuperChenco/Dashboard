@@ -8,9 +8,11 @@ import {
 
 interface Props {
   activePath: string;
+  userEmail?: string;
+  authMode: 'supabase' | 'local-development' | 'unconfigured';
 }
 
-const { activePath } = Astro.props;
+const { activePath, userEmail, authMode } = Astro.props;
 ---
 
 <aside
@@ -97,7 +99,7 @@ const { activePath } = Astro.props;
     >
       <Icon name="settings" className="size-[17px]" />
       Settings
-      <span class="ml-auto text-[10px] text-app-subtle">Mock</span>
+      <span class="ml-auto text-[10px] text-app-subtle">Data</span>
     </a>
     <div class="mt-2 flex items-center gap-3 rounded-control px-3 py-2.5">
       <span
@@ -109,10 +111,25 @@ const { activePath } = Astro.props;
         <span class="block truncate text-xs font-medium text-app-foreground"
           >CEO Workspace</span
         >
-        <span class="block truncate text-[10px] text-app-subtle"
-          >Phase 2 Local User</span
-        >
+        <span class="block truncate text-[10px] text-app-subtle">
+          {
+            userEmail ??
+              (authMode === 'local-development' ? 'Local development' : 'Owner')
+          }
+        </span>
       </span>
     </div>
+    {
+      authMode === 'supabase' && (
+        <form action="/api/auth/sign-out" method="post" class="mt-1 px-3">
+          <button
+            type="submit"
+            class="text-[11px] text-app-subtle underline underline-offset-4 hover:text-app-foreground"
+          >
+            Sign Out
+          </button>
+        </form>
+      )
+    }
   </div>
 </aside>

@@ -37,6 +37,8 @@ Propose → CEO Confirm → Execute → Audit
 
 Phase 0 定义 TypeScript interface。Phase 2 增加纯确定性 Mock Advisor，用于 Task 分类、One Thing、Blocked Next Action、Idea 分析和 Strategic Drift Preview；不安装 OpenAI SDK、不创建真实 provider、不发送请求。
 
+Phase 3 只建设身份与云数据层，Mock Advisor 保持不变。真实 OpenAI Provider、AI 日志和成本控制属于 Phase 4。
+
 任何 Mock Advisor suggestion 默认是 inert data。只有带有明确 `CEO Confirm` 的用户动作才能调用相应 Workflow Service mutation，并追加 Audit Event。
 
 ## 记录要求

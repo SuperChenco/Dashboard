@@ -1,11 +1,10 @@
 ---
-import ModulePlaceholder from '@/components/modules/ModulePlaceholder.astro';
+import DataSettings from '@/components/settings/DataSettings';
 import AppLayout from '@/layouts/AppLayout.astro';
+
+const cloudEnabled = Astro.locals.authMode === 'supabase';
 ---
 
-<AppLayout title="Settings" subtitle="系统配置占位" eyebrow="System">
-  <ModulePlaceholder
-    title="Settings 尚未开放"
-    description="Phase 1 不接入 Auth、Supabase 或用户偏好持久化。"
-  />
+<AppLayout title="Settings" subtitle="数据迁移与个人数据导出" eyebrow="System">
+  <DataSettings client:load cloudEnabled={cloudEnabled} />
 </AppLayout>

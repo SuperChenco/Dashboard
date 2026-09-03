@@ -11,14 +11,29 @@ import { getMaintenanceFocusRisk } from '@/domain/sprints';
 import { waitingNeedsAttention } from '@/domain/tasks';
 import type { YesterdayDecision } from '@/domain/today';
 import { useWorkflow } from '@/hooks/useWorkflow';
+import WorkflowLoadState from '@/components/workflow/WorkflowLoadState';
+import type { TodayPlan } from '@/domain/workflow/types';
 
 export default function TodayWorkspace() {
-  const { state, service } = useWorkflow();
+  const { state, service, isLoading, error, refresh } = useWorkflow();
   const [feedback, setFeedback] = useState<string>();
   const [suggestionIndex, setSuggestionIndex] = useState(0);
+  if (isLoading && state.tasks.length === 0)
+    return <WorkflowLoadState loading />;
+  if (error)
+    return <WorkflowLoadState error={error} onRetry={() => void refresh()} />;
   const date = new Date().toISOString().slice(0, 10);
-  const plan =
-    state.todayPlans.find((item) => item.date === date) ?? state.todayPlans[0];
+  const plan: TodayPlan = state.todayPlans.find(
+    (item) => item.date === date,
+  ) ?? {
+    id: `today-${date}`,
+    date,
+    keyTaskIds: [],
+    otherTaskIds: [],
+    unfinishedTaskIds: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
   const primarySprint = state.sprints.find(
     (item) => item.kind === 'primary' && item.status === 'active',
   );
@@ -74,8 +89,9 @@ export default function TodayWorkspace() {
       ? '有 Goal 已超过 4 周没有有效进展，建议安排 Review。'
       : undefined);
 
-  const addKey = (taskId: string) => {
-    const result = service.addTodayKeyTask(taskId);
+  const addKey = async (taskId: string) => {
+    const result = await service.addTodayKeyTask(taskId).catch(() => undefined);
+    if (!result) return;
     setFeedback(result?.errors?.[0] ?? '已加入 Key Tasks。');
   };
 
@@ -111,7 +127,11 @@ export default function TodayWorkspace() {
             <div className="mt-5 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => service.setTodayOneThing(recommendedTask.id)}
+                onClick={() =>
+                  void service
+                    .setTodayOneThing(recommendedTask.id)
+                    .catch(() => undefined)
+                }
                 className="h-9 rounded-control bg-app-foreground px-4 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-foreground"
               >
                 设为今日重点
@@ -139,7 +159,9 @@ export default function TodayWorkspace() {
                 defaultValue=""
                 onChange={(event) => {
                   if (event.target.value)
-                    service.setTodayOneThing(event.target.value);
+                    void service
+                      .setTodayOneThing(event.target.value)
+                      .catch(() => undefined);
                 }}
                 className="mt-2 h-10 w-full max-w-xl rounded-control border border-app-border bg-white px-3 text-sm"
               >
@@ -293,7 +315,9 @@ export default function TodayWorkspace() {
                           type="button"
                           key={decision}
                           onClick={() =>
-                            service.resolveYesterday(task.id, decision)
+                            void service
+                              .resolveYesterday(task.id, decision)
+                              .catch(() => undefined)
                           }
                           className="task-action"
                         >
@@ -336,7 +360,9 @@ export default function TodayWorkspace() {
           defaultValue=""
           onChange={(event) => {
             if (event.target.value)
-              service.addTodayOtherTask(event.target.value);
+              void service
+                .addTodayOtherTask(event.target.value)
+                .catch(() => undefined);
             event.target.value = '';
           }}
           className="mt-4 h-9 w-full max-w-xl rounded-control border border-app-border bg-white px-3 text-sm"

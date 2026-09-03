@@ -28,3 +28,7 @@ export function requireSupabaseConfig(
 
   return { url, publishableKey };
 }
+
+export function hasSupabaseConfig(input: SupabasePublicConfigInput): boolean {
+  return Boolean(input.url?.trim() && input.publishableKey?.trim());
+}

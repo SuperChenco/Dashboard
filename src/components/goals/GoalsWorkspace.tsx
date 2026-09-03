@@ -5,14 +5,19 @@ import WorkflowNotice from '@/components/workflow/WorkflowNotice';
 import { isGoalStagnant } from '@/domain/goals';
 import type { Goal } from '@/domain/workflow/types';
 import { useWorkflow } from '@/hooks/useWorkflow';
+import WorkflowLoadState from '@/components/workflow/WorkflowLoadState';
 
 export default function GoalsWorkspace() {
-  const { state, service } = useWorkflow();
+  const { state, service, isLoading, error, refresh } = useWorkflow();
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState<{
     errors: string[];
     warnings: string[];
   }>({ errors: [], warnings: [] });
+  if (isLoading && state.goals.length === 0)
+    return <WorkflowLoadState loading />;
+  if (error)
+    return <WorkflowLoadState error={error} onRetry={() => void refresh()} />;
   const goalRows = buildGoalRows(state.goals);
 
   return (
@@ -37,6 +42,11 @@ export default function GoalsWorkspace() {
         </WorkflowNotice>
       ))}
       <div className="space-y-4">
+        {goalRows.length === 0 && (
+          <p className="rounded-panel border border-dashed border-app-border px-5 py-8 text-sm text-app-subtle">
+            还没有 Goal。先创建一个能改变结果的战略目标。
+          </p>
+        )}
         {goalRows.map(({ goal, depth }) => {
           const gap =
             goal.suggestedProgress === undefined
@@ -160,8 +170,11 @@ export default function GoalsWorkspace() {
       >
         <GoalForm
           goals={state.goals}
-          onSubmit={(form) => {
-            const result = service.createGoal(form);
+          onSubmit={async (form) => {
+            const result = await service
+              .createGoal(form)
+              .catch(() => undefined);
+            if (!result) return;
             setFeedback({ errors: result.errors, warnings: result.warnings });
             if (result.value) setOpen(false);
           }}
